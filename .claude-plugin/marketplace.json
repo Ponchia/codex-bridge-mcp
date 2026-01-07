@@ -8,7 +8,7 @@
       "name": "codex-bridge",
       "source": "./",
       "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversation support",
-      "version": "0.3.0"
+      "version": "0.3.1"
     }
   ]
 }
