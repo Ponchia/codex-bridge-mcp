@@ -10,10 +10,7 @@
   "plugins": [
     {
       "name": "codex-bridge",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/Ponchia/codex-bridge-mcp.git"
-      },
+      "source": "./",
       "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversation support",
       "version": "0.4.0"
     }
