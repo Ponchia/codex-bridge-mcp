@@ -1,0 +1,12 @@
+{
+  "name": "codex-bridge",
+  "version": "0.3.0",
+  "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversation support",
+  "author": {
+    "name": "Zeno"
+  },
+  "repository": "https://github.com/Ponchia/codex-bridge-mcp",
+  "homepage": "https://github.com/Ponchia/codex-bridge-mcp#readme",
+  "license": "MIT",
+  "keywords": ["codex", "openai", "agent", "mcp", "multi-turn", "conversation"]
+}
