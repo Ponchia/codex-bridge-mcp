@@ -1,8 +1,7 @@
 {
   "name": "Ponchia/codex-bridge-mcp",
   "owner": {
-    "name": "Zeno",
-    "email": "zeno.trevisan@hivepower.tech"
+    "name": "Zeno"
   },
   "plugins": [
     {
