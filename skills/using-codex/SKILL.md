@@ -274,11 +274,54 @@ After completing each major component:
 
 ---
 
+## Named Sessions
+
+Assign names/topics to sessions for easier reference later. This enables workflows like "remember that auth security review discussion with Codex".
+
+### Naming at Creation
+
+Include the `name` parameter when starting a session:
+
+```json
+{
+  "prompt": "Review the authentication code for security issues",
+  "sandbox": "read-only",
+  "name": "auth-security-review"
+}
+```
+
+### Naming Existing Sessions
+
+Use `mcp__codex__codex-bridge-name-session` to name/rename a session:
+
+```json
+{
+  "conversationId": "abc123",
+  "name": "auth-security-review-final"
+}
+```
+
+### Finding Sessions by Name
+
+Search for sessions using the `query` parameter:
+
+```json
+// mcp__codex__codex-bridge-sessions
+{
+  "query": "auth-security"
+}
+```
+
+Returns all sessions with names containing "auth-security" (case-insensitive).
+
+---
+
 ## Helper Tools
 
 - `mcp__codex__codex-bridge-info`: Get bridge status and configuration
 - `mcp__codex__codex-bridge-options`: List available options (models, enums)
-- `mcp__codex__codex-bridge-sessions`: List previous sessions
+- `mcp__codex__codex-bridge-sessions`: List previous sessions (use `query` to search by name)
 - `mcp__codex__codex-bridge-session`: Get details for a specific session
+- `mcp__codex__codex-bridge-name-session`: Set or update the name of a session
 
 See [EXAMPLES.md](EXAMPLES.md) for concrete usage examples.

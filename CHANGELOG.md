@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-07
+
+### Added
+- **Named sessions**: Assign names/topics to Codex sessions for easier reference
+  - New `name` parameter on `codex` tool to name sessions at creation
+  - New `codex-bridge-name-session` tool to name/rename existing sessions
+  - New `query` parameter on `codex-bridge-sessions` to search by name
+  - Session names are persisted and included in all session payloads
+- Enables workflows like "remember that auth security review discussion with Codex"
+
 ## [0.3.1] - 2026-01-07
 
 ### Fixed

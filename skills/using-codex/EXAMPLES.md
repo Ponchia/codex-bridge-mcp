@@ -333,3 +333,95 @@ CONSTRAINTS:
 - Don't modify the database schema
 - Keep the existing response format
 ```
+
+---
+
+## Named Sessions Examples
+
+### Example 13: Named Session for Later Reference
+
+**Scenario**: Start a security review session that you'll want to reference later.
+
+```json
+{
+  "prompt": "Perform a comprehensive security review of the authentication and authorization code in src/auth/. Focus on: OWASP Top 10 vulnerabilities, session management, password handling, and access control. Document all findings.",
+  "sandbox": "read-only",
+  "name": "auth-security-audit-jan2026",
+  "reasoningEffort": "high"
+}
+```
+
+**Later, when user asks**: "What did Codex find in that security review?"
+
+**Search by name:**
+```json
+// mcp__codex__codex-bridge-sessions
+{
+  "query": "security-audit"
+}
+```
+
+**Continue the conversation:**
+```json
+{
+  "conversationId": "<from search results>",
+  "prompt": "What were the most critical findings from your review?"
+}
+```
+
+---
+
+### Example 14: Naming Sessions After Creation
+
+**Scenario**: You started a productive session but forgot to name it.
+
+**Name the session retroactively:**
+```json
+// mcp__codex__codex-bridge-name-session
+{
+  "conversationId": "abc123",
+  "name": "payment-refactor-discussion"
+}
+```
+
+---
+
+### Example 15: Multiple Named Sessions for a Project
+
+**Scenario**: Working on a major feature with several Codex discussions.
+
+**Architecture discussion:**
+```json
+{
+  "prompt": "Let's discuss the architecture for the new notification system...",
+  "sandbox": "read-only",
+  "name": "notifications-architecture"
+}
+```
+
+**Implementation session:**
+```json
+{
+  "prompt": "Implement the notification system based on our architecture discussion...",
+  "sandbox": "workspace-write",
+  "name": "notifications-implementation"
+}
+```
+
+**Review session:**
+```json
+{
+  "prompt": "Review the notification system implementation for issues...",
+  "sandbox": "read-only",
+  "name": "notifications-review"
+}
+```
+
+**Search all related sessions:**
+```json
+{
+  "query": "notifications"
+}
+```
+
+Returns all three sessions for easy reference and continuation.

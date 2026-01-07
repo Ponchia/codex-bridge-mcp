@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
-BRIDGE_VERSION = "0.3.1"
+BRIDGE_VERSION = "0.4.0"
 
 JSONRPC_PARSE_ERROR = -32700
 JSONRPC_INVALID_REQUEST = -32600
@@ -784,6 +784,10 @@ def _bridge_tools() -> list:
                         "type": "integer",
                         "description": "How long to wait for conversationId/session metadata after tool completion.",
                     },
+                    "name": {
+                        "type": "string",
+                        "description": "Optional name/topic for this session (e.g., 'auth-security-review'). Makes it easier to find and reference later.",
+                    },
                 },
                 "required": ["prompt"],
             },
@@ -965,6 +969,13 @@ class CodexBridgeServer:
                             "description": "How long to wait for conversationId/session metadata after tool completion.",
                         },
                     )
+                    props.setdefault(
+                        "name",
+                        {
+                            "type": "string",
+                            "description": "Optional name/topic for this session (e.g., 'auth-security-review'). Makes it easier to find and reference later.",
+                        },
+                    )
                     schema["properties"] = props
                     tool["inputSchema"] = schema
             elif name == "codex-reply":
@@ -997,6 +1008,7 @@ class CodexBridgeServer:
         startup_timeout_ms = args.pop("startupTimeoutMs", None)
         reasoning_effort = args.pop("reasoningEffort", None)
         reasoning_summary = args.pop("reasoningSummary", None)
+        session_name = args.pop("name", None)  # Bridge-specific: name for the session
 
         timeout_s = 600.0
         if isinstance(timeout_ms, int) and timeout_ms > 0:
@@ -1033,6 +1045,11 @@ class CodexBridgeServer:
         output_text, is_error = _normalize_upstream_tool_response(resp)
         payload: Dict[str, Any] = {"output": output_text}
         if session is not None:
+            # If a name was provided, update the session with it
+            if isinstance(session_name, str) and session_name:
+                session = session.with_name(session_name)
+                # Update the stored session with the name
+                self._sessions.update(session.conversation_id, name=session_name)
             payload["conversationId"] = session.conversation_id
             payload["session"] = _session_info_payload(session)
         else:
@@ -1123,6 +1140,7 @@ class CodexBridgeServer:
     def _handle_sessions_list_tool(self, msg_id: Any, args: dict) -> dict:
         limit = args.get("limit")
         cursor = args.get("cursor")
+        query = args.get("query")
         if limit is None:
             limit_int = 50
         elif isinstance(limit, int):
@@ -1131,8 +1149,28 @@ class CodexBridgeServer:
             return _jsonrpc_response(msg_id, _tool_text_result("limit must be an integer", is_error=True))
         if cursor is not None and not isinstance(cursor, str):
             return _jsonrpc_response(msg_id, _tool_text_result("cursor must be a string", is_error=True))
-        payload = self._sessions.list(limit=limit_int, cursor=cursor)
+        if query is not None and not isinstance(query, str):
+            return _jsonrpc_response(msg_id, _tool_text_result("query must be a string", is_error=True))
+
+        # If query is provided, search by name instead of listing
+        if query:
+            results = self._sessions.search(query=query, limit=limit_int)
+            payload = {"data": [_session_info_payload(info) for info in results], "nextCursor": None}
+        else:
+            payload = self._sessions.list(limit=limit_int, cursor=cursor)
         return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))
+
+    def _handle_name_session_tool(self, msg_id: Any, args: dict) -> dict:
+        cid = args.get("conversationId")
+        name = args.get("name")
+        if not isinstance(cid, str) or not cid:
+            return _jsonrpc_response(msg_id, _tool_text_result("conversationId is required", is_error=True))
+        if not isinstance(name, str) or not name:
+            return _jsonrpc_response(msg_id, _tool_text_result("name is required", is_error=True))
+        updated = self._sessions.update(conversation_id=cid, name=name)
+        if updated is None:
+            return _jsonrpc_response(msg_id, _tool_text_result(f"Session not found: {cid}", is_error=True))
+        return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(_session_info_payload(updated)), is_error=False))
 
     def _handle_session_get_tool(self, msg_id: Any, args: dict) -> dict:
         cid = args.get("conversationId")
@@ -1168,6 +1206,9 @@ class CodexBridgeServer:
                 return
             if tool_name == "codex-bridge-session":
                 self._send(self._handle_session_get_tool(msg_id, args))
+                return
+            if tool_name == "codex-bridge-name-session":
+                self._send(self._handle_name_session_tool(msg_id, args))
                 return
 
             self._send(
