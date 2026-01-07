@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-07
+
+### Added
+- **Critical Discussion skill** (`critical-discussion`): Uses GPT 5.2 (base model) with `xhigh` reasoning for architecture decisions, trade-off analysis, and technical planning
+- **Coding Delegation skill** (`coding-delegation`): Uses GPT 5.2 Codex with `xhigh` reasoning for autonomous code implementation
+- **New slash commands**:
+  - `/codex-bridge:discuss` - Start a critical discussion with GPT 5.2
+  - `/codex-bridge:delegate` - Delegate coding task to GPT 5.2 Codex
+- **Hooks documentation** (`hooks/README.md`): Installation guide for optional hooks
+  - PostToolUse session logger (logs to `~/.codex-bridge-mcp/logs/`)
+  - PreToolUse configuration validator (warns about dangerous settings)
+- `allowed-tools` frontmatter in skills for cleaner permissions
+
+### Changed
+- Updated plugin description to highlight new capabilities
+- Added new keywords: `gpt-5.2`, `delegation`, `discussion`
+- Reorganized README with skills and commands tables
+
 ## [0.4.2] - 2026-01-07
 
 ### Fixed

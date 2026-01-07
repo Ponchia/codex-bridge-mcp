@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ponchia-codex-bridge-mcp",
-  "description": "OpenAI Codex integration for Claude Code",
+  "description": "OpenAI Codex integration for Claude Code with GPT 5.2 discussions and coding delegation",
   "owner": {
     "name": "Zeno"
   },
@@ -12,8 +12,8 @@
         "source": "url",
         "url": "https://github.com/Ponchia/codex-bridge-mcp.git"
       },
-      "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversation support",
-      "version": "0.4.2",
+      "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversations, GPT 5.2 critical discussions, and coding delegation",
+      "version": "0.5.0",
       "strict": true
     }
   ]

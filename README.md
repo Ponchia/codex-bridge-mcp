@@ -5,9 +5,12 @@ A Claude Code plugin that wraps the official `codex mcp-server` and **returns `c
 ## Features
 
 - **Multi-turn conversations**: Returns `conversationId` in-band for seamless follow-ups
-- **Proactive skill**: Claude automatically considers using Codex for complex coding tasks
-- **Slash command**: Quick `/codex-bridge:codex` command to delegate tasks
+- **Critical discussions**: GPT 5.2 with max reasoning for architecture/design analysis
+- **Coding delegation**: GPT 5.2 Codex with max reasoning for autonomous implementation
+- **Proactive skills**: Claude automatically considers using Codex or discussion mode
+- **Slash commands**: `/discuss` and `/delegate` for explicit invocation
 - **Session persistence**: Tracks all sessions in `~/.codex-bridge-mcp/sessions.jsonl`
+- **Hook support**: Optional logging and validation hooks
 - **Non-blocking**: Worker threads prevent long Codex runs from blocking
 - **Cancellation support**: `$/cancelRequest` for aborting long-running tasks
 
@@ -107,20 +110,49 @@ Call `codex-reply` with the `conversationId` and a new prompt. The result is the
 
 ## Plugin Components
 
-### Skill: `using-codex`
+### Skills
 
-A proactive skill that teaches Claude when and how to delegate tasks to Codex. Claude will automatically consider using Codex for:
-- Multi-file feature implementations
-- Complex refactoring tasks
-- Boilerplate code generation
-- Tasks that benefit from autonomous execution
+| Skill | Model | Purpose |
+|-------|-------|---------|
+| `using-codex` | Various | General guidance for multi-turn Codex conversations |
+| `critical-discussion` | `gpt-5.2` | Architecture decisions, trade-off analysis, planning |
+| `coding-delegation` | `gpt-5.2-codex` | Autonomous code implementation |
 
-### Slash Command: `/codex-bridge:codex`
+#### Critical Discussion Skill
 
-Quick way to explicitly delegate a task:
+Uses GPT 5.2 (base model, NOT Codex) with `xhigh` reasoning for:
+- Architecture decisions and trade-off analysis
+- Design pattern evaluation
+- Technical planning discussions
+- Getting "second opinions" on decisions
+
+#### Coding Delegation Skill
+
+Uses GPT 5.2 Codex with `xhigh` reasoning for:
+- Implementing new features
+- Writing tests
+- Refactoring code
+- Bug fixes with clear specs
+
+### Slash Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/codex-bridge:codex` | General Codex delegation |
+| `/codex-bridge:discuss` | Start a critical discussion with GPT 5.2 |
+| `/codex-bridge:delegate` | Delegate coding task to GPT 5.2 Codex |
+
+Examples:
 ```
-/codex-bridge:codex implement a REST API for user management
+/codex-bridge:discuss Should we use microservices or monolith?
+/codex-bridge:delegate implement user authentication with JWT
 ```
+
+### Hooks (Optional)
+
+See [hooks/README.md](hooks/README.md) for optional hook configurations:
+- **PostToolUse Logger**: Logs all Codex sessions to `~/.codex-bridge-mcp/logs/`
+- **PreToolUse Validator**: Warns about dangerous configurations
 
 ## Notes
 
