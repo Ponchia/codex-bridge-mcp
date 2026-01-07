@@ -39,7 +39,7 @@ Structure the task prompt with:
   "reasoningEffort": "xhigh",
   "sandbox": "workspace-write",
   "approval-policy": "on-failure",
-  "name": "coding-task-session"
+  "name": "impl/<topic> #tags"
 }
 ```
 

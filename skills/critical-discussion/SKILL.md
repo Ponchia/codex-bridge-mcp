@@ -1,12 +1,10 @@
 ---
 name: critical-discussion
 description: |
-  Critically discuss topics with GPT 5.2 for solution-oriented analysis. Use when:
-  evaluating architecture decisions, analyzing trade-offs, planning complex features,
-  discussing design patterns, debating implementation approaches, or needing a second
-  opinion on technical decisions. Triggers: "discuss", "analyze", "evaluate", "debate",
-  "think through", "architecture", "trade-offs", "critical analysis", "second opinion".
-  Uses GPT 5.2 (NOT Codex) with maximum reasoning effort for thoughtful discourse.
+  Critically discuss architecture/technical decisions with GPT 5.2 (base model, not Codex).
+  Use when: evaluating trade-offs, architecture decisions, risk analysis, planning, second opinions.
+  Avoid when: you need code changes (use coding-delegation).
+  Triggers: "discuss", "analyze", "evaluate", "trade-offs", "architecture", "ADR", "second opinion".
 allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex
   - mcp__plugin_codex-bridge_codex__codex-reply
@@ -15,134 +13,87 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
 ---
 
-# Critical Discussion with GPT 5.2
+# Critical Discussion (GPT 5.2)
 
-Use GPT 5.2 (base model, NOT Codex) with maximum reasoning effort to critically analyze and discuss topics. This skill is for **thinking, analysis, and planning** - not code generation.
+## Purpose
 
-## When to Use This Skill
+- Produce decision-quality analysis: recommendation + rationale + risks + next steps
+- Keep discussions resumable via named sessions
 
-**Good candidates:**
-- Architecture decisions and trade-off analysis
-- Design pattern evaluation and selection
-- Technical planning and roadmap discussions
-- Evaluating multiple implementation approaches
-- Getting a critical "second opinion" on decisions
-- Analyzing risks and mitigation strategies
-- Discussing best practices and conventions
-- Complex problem decomposition
+## Use When / Avoid When
 
-**Use coding-delegation skill instead for:**
-- Actual code implementation
-- Writing tests
-- Refactoring code
-- Bug fixes
+**Use when:**
+- Architecture or API design decisions
+- Trade-off evaluation (options, risks, mitigations)
+- Planning + defining scope for implementation
+- Reviewing proposals at a conceptual level
+- Getting a "second opinion" on technical decisions
 
----
+**Avoid when:**
+- User wants code changes now (use `coding-delegation`)
+- Problem needs product/legal decisions (ask first)
 
-## How to Start a Discussion
+## Required Inputs (ask if missing)
 
-Use the `mcp__plugin_codex-bridge_codex__codex` tool with these **required settings**:
+- Goal: what outcome are we optimizing for?
+- Constraints: performance, cost, security, compatibility, team size
+- Options: known alternatives (if any)
+- Verification: what evidence would change our mind?
 
-```json
-{
-  "prompt": "<your discussion topic with context>",
-  "model": "gpt-5.2",
-  "reasoningEffort": "xhigh",
-  "sandbox": "read-only",
-  "name": "<descriptive-session-name>"
-}
-```
+## Tool Settings
 
-**Critical Configuration:**
 | Setting | Value | Why |
 |---------|-------|-----|
-| `model` | `gpt-5.2` | Base model for reasoning (NOT gpt-5.2-codex) |
+| `model` | `gpt-5.2` | Base model for reasoning (NOT codex) |
 | `reasoningEffort` | `xhigh` | Maximum analysis depth |
 | `sandbox` | `read-only` | Discussions don't modify files |
-| `name` | descriptive | For later reference and search |
+| `name` | required | Use `arch/<topic> #tag1 #tag2` |
 
----
-
-## Prompt Structure for Discussions
-
-Structure your discussion prompts for best results:
+## Prompt Skeleton
 
 ```
-TOPIC: [Clear statement of what you want to discuss]
+TOPIC: <what we're deciding>
 
 CONTEXT:
-- [Relevant background information]
-- [Current state/constraints]
-- [Stakeholders affected]
+- <current system / constraints>
+- <stakeholders>
+- <non-goals>
 
-SPECIFIC QUESTIONS:
-1. [First aspect to analyze]
-2. [Second aspect to evaluate]
-3. [Trade-offs to consider]
+OPTIONS (if known):
+A) ...
+B) ...
+
+QUESTIONS:
+1) ...
+2) ...
 
 DESIRED OUTPUT:
-- [What kind of analysis you want]
-- [Format preferences: pros/cons, recommendations, etc.]
+- Recommendation + rationale
+- Risks + mitigations
+- Open questions
+- Next steps
 ```
 
----
+## Workflow
 
-## Continuing a Discussion
+1. If continuing an older topic, search by name (`codex-bridge-sessions`) or use `/codex-bridge:context recall`
+2. Start discussion session (or continue with `codex-reply`) using settings above
+3. If session is unnamed, set a better name (`codex-bridge-name-session`)
+4. Return output per contract below; be explicit about assumptions
+5. Consider checkpointing (`/codex-bridge:context checkpoint`) for easy recall later
 
-Use `mcp__plugin_codex-bridge_codex__codex-reply` to continue with the same `conversationId`:
+## Output Contract
 
-```json
-{
-  "conversationId": "<from previous response>",
-  "prompt": "Let's explore the second option further. What are the long-term maintenance implications?"
-}
-```
+- **Recommendation** (one paragraph)
+- **Options considered** (short bullets)
+- **Key trade-offs** (pros/cons)
+- **Risks** (with mitigations)
+- **Assumptions / unknowns**
+- **Next steps** (ordered)
+- **Session**: name + `conversationId`
 
-The discussion maintains full context from previous exchanges.
+## Stop Conditions (ask the user)
 
----
-
-## Output Format
-
-Discussion results should be presented in markdown:
-- Clear headers for organization
-- Pros/cons tables where appropriate
-- Numbered recommendations
-- Summary of key insights
-- Areas requiring further investigation
-
----
-
-## Named Sessions
-
-Always name discussion sessions for later reference:
-
-```json
-{
-  "name": "auth-architecture-discussion"
-}
-```
-
-Find past discussions with `mcp__plugin_codex-bridge_codex__codex-bridge-sessions`:
-
-```json
-{
-  "query": "architecture"
-}
-```
-
----
-
-## Example: Architecture Decision
-
-```json
-{
-  "prompt": "TOPIC: Should we use microservices or monolith for our new platform?\n\nCONTEXT:\n- Team of 5 developers\n- Expected 10k DAU initially, scaling to 100k\n- Need to integrate with 3 payment providers\n- Budget constraints\n\nQUESTIONS:\n1. Operational complexity trade-offs?\n2. Time-to-market impact?\n3. Scaling implications?\n\nOUTPUT: Pros/cons comparison with recommendation",
-  "model": "gpt-5.2",
-  "reasoningEffort": "xhigh",
-  "sandbox": "read-only",
-  "name": "platform-architecture-decision"
-}
-```
-
-See [EXAMPLES.md](EXAMPLES.md) for more detailed usage examples.
+- Missing constraints that materially change the recommendation
+- Security/identity decisions without threat model assumptions
+- Decisions requiring product/legal/compliance input

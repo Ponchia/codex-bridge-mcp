@@ -36,7 +36,7 @@ Structure the discussion prompt with:
   "model": "gpt-5.2",
   "reasoningEffort": "xhigh",
   "sandbox": "read-only",
-  "name": "discussion-session"
+  "name": "arch/<topic> #tags"
 }
 ```
 

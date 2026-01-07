@@ -5,7 +5,7 @@ argument-hint: [task description]
 
 # Start Codex Session
 
-Delegate this coding task to OpenAI Codex using the `mcp__codex__codex` tool.
+Delegate this coding task to OpenAI Codex.
 
 ## Task
 
@@ -13,11 +13,14 @@ $ARGUMENTS
 
 ## Instructions
 
-1. Use the `mcp__codex__codex` tool with the task above as the prompt
+Use the `mcp__plugin_codex-bridge_codex__codex` tool (or `mcp__codex__codex` if installed manually):
+
+1. Set the task above as the `prompt`
 2. Set appropriate options:
-   - `sandbox`: Use `workspace-write` for implementation tasks, `read-only` for exploration
+   - `sandbox`: Use `workspace-write` for implementation, `read-only` for exploration
    - `approval-policy`: Use `on-failure` for most tasks
-3. Save the `conversationId` from the response for potential follow-ups
+   - `name`: Use naming convention `impl/<topic> #tags` or `explore/<topic>`
+3. Save the `conversationId` for potential follow-ups
 4. Review and summarize what Codex accomplished
 
 ## Example Tool Call
@@ -26,6 +29,7 @@ $ARGUMENTS
 {
   "prompt": "<the task description>",
   "sandbox": "workspace-write",
-  "approval-policy": "on-failure"
+  "approval-policy": "on-failure",
+  "name": "impl/<topic> #tags"
 }
 ```
