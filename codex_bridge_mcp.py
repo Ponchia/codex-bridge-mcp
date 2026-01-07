@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
-BRIDGE_VERSION = "0.3.0"
+BRIDGE_VERSION = "0.3.1"
 
 JSONRPC_PARSE_ERROR = -32700
 JSONRPC_INVALID_REQUEST = -32600
@@ -1107,11 +1107,17 @@ class CodexBridgeServer:
         msg_id = msg.get("id")
 
         if method == "initialize" and msg_id is not None:
+            params = msg.get("params") or {}
+            requested_version = None
+            if isinstance(params, dict):
+                pv = params.get("protocolVersion")
+                if isinstance(pv, str) and pv:
+                    requested_version = pv
             return {
                 "jsonrpc": "2.0",
                 "id": msg_id,
                 "result": {
-                    "protocolVersion": MCP_PROTOCOL_VERSION,
+                    "protocolVersion": requested_version or MCP_PROTOCOL_VERSION,
                     "capabilities": {
                         "tools": {"listChanged": False},
                         "resources": {"subscribe": False, "listChanged": False},
