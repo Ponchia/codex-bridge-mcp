@@ -20,7 +20,7 @@ A Claude Code plugin that wraps the official `codex mcp-server` and **returns `c
 /plugin marketplace add Ponchia/codex-bridge-mcp
 
 # Install the plugin
-/plugin install codex-bridge@Ponchia/codex-bridge-mcp
+/plugin install codex-bridge@ponchia-codex-bridge-mcp
 ```
 
 ### Option 2: Install from Local Clone
