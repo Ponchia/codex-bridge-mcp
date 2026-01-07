@@ -51,6 +51,7 @@ claude mcp add -s user codex -- python3 /path/to/codex_bridge_mcp.py
 | Variable | Description |
 |----------|-------------|
 | `CODEX_BINARY` | Path to codex CLI (auto-detected if on PATH) |
+| `CODEX_BIN` | Alias for `CODEX_BINARY` (for compatibility) |
 | `CODEX_BRIDGE_STATE_DIR` | Override state directory (default: `~/.codex-bridge-mcp`) |
 
 ## Why this exists

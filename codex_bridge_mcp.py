@@ -116,9 +116,27 @@ class SessionInfo:
     rollout_path: Optional[str] = None
     history_log_id: Optional[int] = None
     history_entry_count: Optional[int] = None
+    name: Optional[str] = None
+
+    def with_name(self, name: str) -> "SessionInfo":
+        """Return a new SessionInfo with the given name."""
+        return SessionInfo(
+            conversation_id=self.conversation_id,
+            captured_at=self.captured_at,
+            model=self.model,
+            model_provider_id=self.model_provider_id,
+            approval_policy=self.approval_policy,
+            sandbox_policy=self.sandbox_policy,
+            cwd=self.cwd,
+            reasoning_effort=self.reasoning_effort,
+            rollout_path=self.rollout_path,
+            history_log_id=self.history_log_id,
+            history_entry_count=self.history_entry_count,
+            name=name,
+        )
 
     @staticmethod
-    def from_session_configured_event(event: dict) -> Optional["SessionInfo"]:
+    def from_session_configured_event(event: dict, name: Optional[str] = None) -> Optional["SessionInfo"]:
         session_id = event.get("session_id")
         if not isinstance(session_id, str) or not session_id:
             return None
@@ -149,6 +167,7 @@ class SessionInfo:
             history_entry_count=event.get("history_entry_count")
             if isinstance(event.get("history_entry_count"), int)
             else None,
+            name=name,
         )
 
 
@@ -211,6 +230,7 @@ class SessionStore:
                             history_entry_count=obj.get("history_entry_count")
                             if isinstance(obj.get("history_entry_count"), int)
                             else None,
+                            name=obj.get("name") if isinstance(obj.get("name"), str) else None,
                         )
                     except Exception:
                         continue
@@ -220,30 +240,73 @@ class SessionStore:
         except OSError:
             return
 
+    def _session_to_record(self, info: SessionInfo) -> dict:
+        """Convert a SessionInfo to a JSON-serializable record."""
+        return {
+            "conversation_id": info.conversation_id,
+            "captured_at": info.captured_at,
+            "model": info.model,
+            "model_provider_id": info.model_provider_id,
+            "approval_policy": info.approval_policy,
+            "sandbox_policy": info.sandbox_policy,
+            "cwd": info.cwd,
+            "reasoning_effort": info.reasoning_effort,
+            "rollout_path": info.rollout_path,
+            "history_log_id": info.history_log_id,
+            "history_entry_count": info.history_entry_count,
+            "name": info.name,
+        }
+
+    def _rewrite_file(self) -> None:
+        """Rewrite the entire sessions file from memory (caller must hold lock)."""
+        try:
+            with self._path.open("w", encoding="utf-8") as f:
+                for cid in self._order:
+                    info = self._by_id.get(cid)
+                    if info is not None:
+                        f.write(_json_dumps(self._session_to_record(info)) + "\n")
+        except OSError:
+            pass
+
     def add(self, info: SessionInfo) -> None:
         with self._lock:
             if info.conversation_id in self._by_id:
                 return
             self._by_id[info.conversation_id] = info
             self._order.append(info.conversation_id)
-            record = {
-                "conversation_id": info.conversation_id,
-                "captured_at": info.captured_at,
-                "model": info.model,
-                "model_provider_id": info.model_provider_id,
-                "approval_policy": info.approval_policy,
-                "sandbox_policy": info.sandbox_policy,
-                "cwd": info.cwd,
-                "reasoning_effort": info.reasoning_effort,
-                "rollout_path": info.rollout_path,
-                "history_log_id": info.history_log_id,
-                "history_entry_count": info.history_entry_count,
-            }
             try:
                 with self._path.open("a", encoding="utf-8") as f:
-                    f.write(_json_dumps(record) + "\n")
+                    f.write(_json_dumps(self._session_to_record(info)) + "\n")
             except OSError:
                 pass
+
+    def update(self, conversation_id: str, name: Optional[str] = None) -> Optional[SessionInfo]:
+        """Update a session's name. Returns the updated SessionInfo or None if not found."""
+        with self._lock:
+            existing = self._by_id.get(conversation_id)
+            if existing is None:
+                return None
+            if name is not None:
+                updated = existing.with_name(name)
+                self._by_id[conversation_id] = updated
+                self._rewrite_file()
+                return updated
+            return existing
+
+    def search(self, query: str, limit: int = 50) -> List[SessionInfo]:
+        """Search sessions by name (case-insensitive substring match)."""
+        query_lower = query.lower()
+        with self._lock:
+            results = []
+            for cid in reversed(self._order):
+                info = self._by_id.get(cid)
+                if info is None:
+                    continue
+                if info.name and query_lower in info.name.lower():
+                    results.append(info)
+                    if len(results) >= limit:
+                        break
+            return results
 
     def get(self, conversation_id: str) -> Optional[SessionInfo]:
         with self._lock:
@@ -529,6 +592,7 @@ def _extract_text(result: dict) -> str:
 def _session_info_payload(info: SessionInfo) -> dict:
     return {
         "conversationId": info.conversation_id,
+        "name": info.name,
         "capturedAt": info.captured_at,
         "model": info.model,
         "modelProviderId": info.model_provider_id,
@@ -754,12 +818,13 @@ def _bridge_extra_tools() -> list:
         },
         {
             "name": "codex-bridge-sessions",
-            "description": "List known Codex conversations captured by the bridge. Returns JSON {data,nextCursor}.",
+            "description": "List known Codex conversations captured by the bridge. Returns JSON {data,nextCursor}. Use 'query' to search by session name.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "limit": {"type": "integer", "description": "Max items to return (default 50)."},
                     "cursor": {"type": "string", "description": "Pagination cursor from a previous call."},
+                    "query": {"type": "string", "description": "Search sessions by name (case-insensitive substring match)."},
                 },
             },
         },
@@ -770,6 +835,18 @@ def _bridge_extra_tools() -> list:
                 "type": "object",
                 "properties": {"conversationId": {"type": "string"}},
                 "required": ["conversationId"],
+            },
+        },
+        {
+            "name": "codex-bridge-name-session",
+            "description": "Set or update the name/topic of a Codex session for easier reference. Returns the updated session info.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "conversationId": {"type": "string", "description": "The conversation ID to name."},
+                    "name": {"type": "string", "description": "The name/topic to assign to this session (e.g., 'auth-security-review')."},
+                },
+                "required": ["conversationId", "name"],
             },
         },
     ]
@@ -954,9 +1031,16 @@ class CodexBridgeServer:
         )
 
         output_text, is_error = _normalize_upstream_tool_response(resp)
-        payload: Dict[str, Any] = {"conversationId": session.conversation_id if session else None, "output": output_text}
+        payload: Dict[str, Any] = {"output": output_text}
         if session is not None:
+            payload["conversationId"] = session.conversation_id
             payload["session"] = _session_info_payload(session)
+        else:
+            # Missing session means we couldn't capture the conversationId - this is an error
+            # because the caller won't be able to continue the conversation
+            is_error = True
+            payload["conversationId"] = None
+            payload["error"] = "Failed to capture session info (conversationId unavailable). The conversation cannot be continued."
         return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=is_error))
 
     def _handle_codex_reply_tool(
@@ -1105,6 +1189,11 @@ class CodexBridgeServer:
     def handle(self, msg: dict) -> Any:
         method = msg.get("method")
         msg_id = msg.get("id")
+
+        # JSON-RPC 2.0: id must be String, Number, or Null when present
+        # Note: bool is subclass of int in Python, so explicitly reject it
+        if "id" in msg and (isinstance(msg_id, bool) or not isinstance(msg_id, (str, int, float, type(None)))):
+            return _jsonrpc_error(None, JSONRPC_INVALID_REQUEST, "Invalid Request: id must be string, number, or null")
 
         if method == "initialize" and msg_id is not None:
             params = msg.get("params") or {}

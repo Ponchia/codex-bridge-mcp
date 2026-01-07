@@ -70,6 +70,69 @@ class TestBridgeServerInit:
                 assert server._session_writer_thread.is_alive()
 
 
+class TestBridgeServerIdValidation:
+    """Tests for JSON-RPC id validation."""
+
+    def test_rejects_array_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": [1, 2, 3], "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        assert "error" in response
+        assert response["error"]["code"] == cbm.JSONRPC_INVALID_REQUEST
+        assert "id must be string, number, or null" in response["error"]["message"]
+
+    def test_rejects_object_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": {"nested": "id"}, "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        assert "error" in response
+        assert response["error"]["code"] == cbm.JSONRPC_INVALID_REQUEST
+
+    def test_rejects_boolean_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": True, "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        assert "error" in response
+        assert response["error"]["code"] == cbm.JSONRPC_INVALID_REQUEST
+
+    def test_accepts_string_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": "string-id-123", "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        assert "result" in response
+        assert response["id"] == "string-id-123"
+
+    def test_accepts_integer_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": 42, "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        assert "result" in response
+        assert response["id"] == 42
+
+    def test_accepts_float_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": 3.14, "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        assert "result" in response
+        assert response["id"] == 3.14
+
+    def test_accepts_null_id(self, bridge_server):
+        msg = {"jsonrpc": "2.0", "id": None, "method": "tools/list"}
+
+        response = bridge_server.handle(msg)
+
+        # Null id is valid per JSON-RPC 2.0 (though discouraged)
+        # The server treats null id as a notification and returns None
+        # This is acceptable behavior per the spec
+        assert response is None
+
+
 class TestBridgeServerHandle:
     """Tests for the handle method."""
 

@@ -40,18 +40,23 @@ class TestFindCodexBinary:
                 assert result == str(mock_binary)
 
     def test_finds_homebrew_binary(self):
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("pathlib.Path.exists") as mock_exists:
-                def exists_side_effect(self=None):
-                    path = str(self) if hasattr(self, '__str__') else str(mock_exists.call_args)
-                    return "/opt/homebrew/bin/codex" in str(path)
+        """Test that _find_codex_binary finds the homebrew binary."""
+        # We need to mock Path.exists to return True for homebrew path
+        # and False for others, while also ensuring shutil.which returns None
 
-                # Create a mock that returns True for homebrew path
-                with patch.object(Path, "exists", return_value=False):
-                    with patch("pathlib.Path.exists", side_effect=lambda: False):
-                        # This test is tricky due to Path.exists being called on instance
-                        # Let's use a different approach
-                        pass
+        paths_checked = []
+
+        def mock_exists(path_self):
+            paths_checked.append(str(path_self))
+            return str(path_self) == "/opt/homebrew/bin/codex"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(Path, "exists", mock_exists):
+                with patch("shutil.which", return_value=None):
+                    result = cbm._find_codex_binary()
+                    assert result == "/opt/homebrew/bin/codex"
+                    # Verify homebrew path was checked
+                    assert "/opt/homebrew/bin/codex" in paths_checked
 
     def test_uses_shutil_which(self, temp_state_dir: Path):
         with patch.dict(os.environ, {}, clear=True):
