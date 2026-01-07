@@ -81,6 +81,23 @@ All tools return JSON:
 | `approval-policy` | string | no | `untrusted`, `on-failure`, `on-request`, `never` |
 | `name` | string | no | Session name for later search |
 | `timeoutMs` | number | no | Timeout in ms (max 600000) |
+| `config` | object | no | Config overrides (see below) |
+
+### Config Options
+
+Pass additional config via the `config` object:
+
+```json
+{
+  "config": {
+    "web_search_request": true
+  }
+}
+```
+
+| Config Key | Type | Description |
+|------------|------|-------------|
+| `web_search_request` | boolean | Enable web search during execution |
 
 ### codex-reply
 
@@ -106,6 +123,7 @@ All tools return JSON:
 | `impl/<topic> #tags` | Implementation |
 | `review/<topic> #tags` | Code review |
 | `notes/<topic> #notes` | Running memory |
+| `research/<topic> #tags` | Web-enabled research |
 
 ## Background Execution
 

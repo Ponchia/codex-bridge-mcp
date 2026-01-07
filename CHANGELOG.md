@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-01-07
+
+### Added
+- **Dual-Model Pattern**: Both `/codex-bridge:discuss` and `/codex-bridge:research` now run Claude and Codex in parallel, then synthesize results
+- **Web Research**: `/codex-bridge:research` command and `research` skill for dual-model research with web search enabled
+- **Research session naming**: New `research/<topic> #tags` naming convention for research sessions
+- **Web search documentation**: Documented `config.web_search_request` option in skills and commands
+
+### Changed
+- `/codex-bridge:discuss` now uses dual-model workflow: dispatch Codex → Claude analyzes in parallel → synthesize to shared conclusion
+- `/codex-bridge:research` uses dual-model workflow: both models research → merge findings with agreements/unique insights
+- `critical-discussion` skill updated for dual-model pattern
+- `research` skill created with dual-model pattern
+- Updated decision tree in README and docs
+- Added new keywords: `research`, `dual-model`, `web-search`
+
 ## [0.5.0] - 2026-01-07
 
 ### Added

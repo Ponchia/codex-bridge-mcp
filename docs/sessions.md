@@ -12,11 +12,13 @@ Name sessions so they're easy to find later:
 | `impl/<topic> #tag1 #tag2` | Implementation work |
 | `review/<topic> #tag1` | Code reviews |
 | `notes/<topic> #notes` | Running memory summaries |
+| `research/<topic> #tag1` | Web-enabled research |
 
 **Examples**:
 - `arch/auth-tokens #jwt #security`
 - `impl/user-caching #redis #perf`
 - `notes/payment-system #notes`
+- `research/bun-vs-node #runtime #performance`
 
 ## Session Tools
 

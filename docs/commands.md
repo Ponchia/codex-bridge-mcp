@@ -4,27 +4,50 @@
 
 | Command | Purpose |
 |---------|---------|
-| `/codex-bridge:discuss` | Critical analysis with GPT 5.2 (architecture, trade-offs) |
+| `/codex-bridge:discuss` | Dual-model discussion: Claude + Codex analyze → shared conclusion |
 | `/codex-bridge:delegate` | Code implementation with GPT 5.2 Codex |
 | `/codex-bridge:codex` | Low-ceremony Codex calls, session operations |
 | `/codex-bridge:context` | Recall or checkpoint session context |
+| `/codex-bridge:research` | Dual-model research: Claude + Codex research → merged findings |
 
 ---
 
 ## /codex-bridge:discuss
 
-Start a critical discussion using GPT 5.2 (base model, NOT Codex) with maximum reasoning.
+Discuss a topic with both Claude and Codex in parallel, then synthesize into a shared conclusion.
 
-**Use for**: Architecture decisions, trade-off analysis, risk assessment, planning, second opinions.
+**Workflow**:
+1. Dispatch Codex with analysis prompt (background)
+2. Claude analyzes the same topic in parallel
+3. Synthesize both perspectives (agreements, differences, shared conclusion)
 
-**Settings**:
-- `model`: `gpt-5.2`
-- `reasoningEffort`: `xhigh`
-- `sandbox`: `read-only`
+**Use for**: Architecture decisions, trade-off analysis, strategic choices, second opinions.
+
+**Output**: Codex Position, Claude Position, Agreements, Shared Conclusion, Risks, Next Steps.
 
 **Example**:
 ```
 /codex-bridge:discuss Should we use microservices or monolith for our API?
+```
+
+---
+
+## /codex-bridge:research
+
+Research a topic with both Claude and Codex in parallel, then merge findings.
+
+**Workflow**:
+1. Dispatch Codex with web search enabled (background)
+2. Claude researches using WebSearch in parallel
+3. Merge findings (agreements, unique insights, gaps)
+
+**Use for**: Current best practices, technology comparisons, documentation lookups.
+
+**Output**: Merged Findings, Agreements, Unique Insights, Gaps, Sources.
+
+**Example**:
+```
+/codex-bridge:research What are the current best practices for JWT token rotation in 2025?
 ```
 
 ---
@@ -83,9 +106,31 @@ See [Sessions](sessions.md) for naming conventions and workflows.
 Do you want code changes in the repo?
   Yes --> /codex-bridge:delegate
   No  --> Do you need analysis / trade-offs / a decision?
-            Yes --> /codex-bridge:discuss
-            No  --> /codex-bridge:codex
+            Yes --> /codex-bridge:discuss (dual-model)
+            No  --> Do you need current/web information?
+                      Yes --> /codex-bridge:research (dual-model)
+                      No  --> /codex-bridge:codex
 
 Continuing something from before?
   --> /codex-bridge:context recall <topic>
 ```
+
+---
+
+## Web Search Configuration
+
+Enable web search in any Codex call with:
+
+```json
+{
+  "config": {
+    "web_search_request": true
+  }
+}
+```
+
+This allows Codex to search the web during task execution. Useful for:
+- Current best practices
+- Recent documentation
+- Technology comparisons
+- Market research

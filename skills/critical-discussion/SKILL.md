@@ -1,9 +1,9 @@
 ---
 name: critical-discussion
 description: |
-  Critically discuss architecture/technical decisions with GPT 5.2 (base model, not Codex).
-  Use when: evaluating trade-offs, architecture decisions, risk analysis, planning, second opinions.
-  Avoid when: you need code changes (use coding-delegation).
+  Dual-model discussion: Claude and Codex both analyze, then synthesize to a shared conclusion.
+  Use when: evaluating trade-offs, architecture decisions, risk analysis, strategic choices.
+  Avoid when: you need code changes (use coding-delegation), simple factual questions.
   Triggers: "discuss", "analyze", "evaluate", "trade-offs", "architecture", "ADR", "second opinion".
 allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex
@@ -13,34 +13,46 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
 ---
 
-# Critical Discussion (GPT 5.2)
+# Critical Discussion (Dual-Model)
 
 ## Purpose
 
-- Produce decision-quality analysis: recommendation + rationale + risks + next steps
-- Keep discussions resumable via named sessions
+Both Claude and Codex analyze the topic independently, then synthesize into a shared conclusion with higher confidence.
 
-## Use When / Avoid When
+## Why Dual-Model?
 
-**Use when:**
+- **Different perspectives**: Each model may weight factors differently
+- **Confidence**: Agreement = high confidence; differences = important nuances to resolve
+- **Blind spot reduction**: Two analyses catch more edge cases
+
+## Use When
+
 - Architecture or API design decisions
 - Trade-off evaluation (options, risks, mitigations)
-- Planning + defining scope for implementation
-- Reviewing proposals at a conceptual level
+- Technology choices (library A vs B)
+- Strategic decisions needing validation
 - Getting a "second opinion" on technical decisions
 
-**Avoid when:**
+## Avoid When
+
 - User wants code changes now (use `coding-delegation`)
-- Problem needs product/legal decisions (ask first)
+- Simple factual questions (just ask one model)
+- Current events research (use `research`)
 
 ## Required Inputs (ask if missing)
 
-- Goal: what outcome are we optimizing for?
-- Constraints: performance, cost, security, compatibility, team size
-- Options: known alternatives (if any)
-- Verification: what evidence would change our mind?
+- **Goal**: What outcome are we optimizing for?
+- **Constraints**: Performance, cost, security, compatibility
+- **Options**: Known alternatives (if any)
+- **Stakes**: Why this decision matters
 
-## Tool Settings
+## Workflow
+
+1. **Dispatch Codex** with analysis prompt (don't wait)
+2. **Claude analyzes** the same topic in parallel
+3. **Synthesize** when both complete: agreements, differences, shared conclusion
+
+## Tool Settings for Codex
 
 | Setting | Value | Why |
 |---------|-------|-----|
@@ -49,7 +61,7 @@ allowed-tools:
 | `sandbox` | `read-only` | Discussions don't modify files |
 | `name` | required | Use `arch/<topic> #tag1 #tag2` |
 
-## Prompt Skeleton
+## Codex Prompt Skeleton
 
 ```
 TOPIC: <what we're deciding>
@@ -59,41 +71,32 @@ CONTEXT:
 - <stakeholders>
 - <non-goals>
 
-OPTIONS (if known):
-A) ...
-B) ...
+ANALYSIS REQUIRED:
+Provide your independent analysis:
+1. Key considerations and factors
+2. Trade-offs between approaches
+3. Risks and mitigations
+4. Your recommendation with rationale
 
-QUESTIONS:
-1) ...
-2) ...
-
-DESIRED OUTPUT:
-- Recommendation + rationale
-- Risks + mitigations
-- Open questions
-- Next steps
+Be thorough, cite your reasoning, and flag assumptions.
 ```
-
-## Workflow
-
-1. If continuing an older topic, search by name (`codex-bridge-sessions`) or use `/codex-bridge:context recall`
-2. Start discussion session (or continue with `codex-reply`) using settings above
-3. If session is unnamed, set a better name (`codex-bridge-name-session`)
-4. Return output per contract below; be explicit about assumptions
-5. Consider checkpointing (`/codex-bridge:context checkpoint`) for easy recall later
 
 ## Output Contract
 
-- **Recommendation** (one paragraph)
-- **Options considered** (short bullets)
-- **Key trade-offs** (pros/cons)
-- **Risks** (with mitigations)
-- **Assumptions / unknowns**
-- **Next steps** (ordered)
-- **Session**: name + `conversationId`
+Present synthesized discussion:
+1. **Codex Position**: Summary of Codex's analysis
+2. **Claude Position**: Summary of Claude's analysis
+3. **Agreements**: Where both align (high confidence)
+4. **Points of Difference**: Where they differ + resolution
+5. **Shared Conclusion**: The synthesized recommendation
+6. **Key Trade-offs**: Main considerations
+7. **Risks & Mitigations**
+8. **Next Steps**: Action items
+9. **Session info**: Name + conversationId
 
 ## Stop Conditions (ask the user)
 
+- Models fundamentally disagree with no clear resolution
 - Missing constraints that materially change the recommendation
 - Security/identity decisions without threat model assumptions
 - Decisions requiring product/legal/compliance input

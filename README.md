@@ -17,7 +17,7 @@ A Claude Code plugin that wraps the official `codex mcp-server` and **returns `c
 codex --version
 ```
 
-**3) Run a critical discussion** (architecture, trade-offs):
+**3) Critical discussion** (dual-model: Claude + Codex → shared conclusion):
 
 ```
 /codex-bridge:discuss Should we use JWT or opaque sessions for auth?
@@ -29,18 +29,35 @@ codex --version
 /codex-bridge:delegate Add caching to the users endpoint with tests
 ```
 
+**5) Research** (dual-model: Claude + Codex → merged findings):
+
+```
+/codex-bridge:research What are the best practices for JWT rotation in 2025?
+```
+
 ## Which Command Should I Use?
 
 ```
 Do you want code changes in the repo?
   Yes --> /codex-bridge:delegate
   No  --> Do you need analysis / trade-offs / a decision?
-            Yes --> /codex-bridge:discuss
-            No  --> /codex-bridge:codex (direct calls, session ops)
+            Yes --> /codex-bridge:discuss (dual-model)
+            No  --> Do you need current/web information?
+                      Yes --> /codex-bridge:research (dual-model)
+                      No  --> /codex-bridge:codex (direct calls, session ops)
 
 Continuing something from before?
   --> /codex-bridge:context recall <topic>
 ```
+
+## Dual-Model Pattern
+
+Both `/discuss` and `/research` use a **dual-model pattern**:
+1. Dispatch Codex in background
+2. Claude works in parallel
+3. Merge/synthesize both perspectives
+
+This provides higher confidence through agreement and broader coverage through unique insights.
 
 ## Sessions (Name, Find, Recall)
 
@@ -50,6 +67,7 @@ This plugin stores session metadata for easy retrieval.
 - `arch/<topic> #tag1 #tag2` - decisions, ADRs
 - `impl/<topic> #tag1 #tag2` - implementation work
 - `notes/<topic> #notes` - running memory summaries
+- `research/<topic> #tags` - web-enabled research
 
 **Key commands:**
 - `/codex-bridge:context recall <query>` - structured recall from past sessions

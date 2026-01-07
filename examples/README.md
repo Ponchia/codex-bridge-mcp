@@ -6,32 +6,39 @@ Canonical examples for codex-bridge-mcp. Each example shows: goal, command/tool 
 
 | Example | Type | Description |
 |---------|------|-------------|
-| [Architecture Decision](#architecture-decision) | discuss | Microservices vs monolith |
-| [Trade-off Analysis](#trade-off-analysis) | discuss | JWT vs sessions |
+| [Architecture Decision](#architecture-decision) | discuss | Dual-model analysis for microservices vs monolith |
+| [Trade-off Analysis](#trade-off-analysis) | discuss | JWT vs sessions with shared conclusion |
 | [Feature Implementation](#feature-implementation) | delegate | Add caching to endpoint |
 | [Test Generation](#test-generation) | delegate | Generate unit tests |
 | [Refactoring](#refactoring) | delegate | Callbacks to async/await |
 | [Code Review](#code-review) | delegate | Security review (read-only) |
 | [Session Recall](#session-recall) | context | Resume previous discussion |
 | [Session Checkpoint](#session-checkpoint) | context | Save to notes |
+| [Web Research](#web-research) | research | Dual-model research with merged findings |
 
 ---
 
-## Discussion Examples
+## Discussion Examples (Dual-Model)
+
+Both Claude and Codex analyze in parallel, then synthesize to a shared conclusion.
 
 ### Architecture Decision
 
-**Goal**: Decide between microservices and monolith.
+**Goal**: Decide between microservices and monolith with both models analyzing.
 
 ```
 /codex-bridge:discuss Should we use microservices or monolith for our e-commerce platform?
 ```
 
-Or direct tool call:
+**Workflow**:
+1. Dispatch Codex (Step 1 tool call below)
+2. Claude analyzes in parallel
+3. Synthesize to shared conclusion
 
+**Step 1 - Codex tool call**:
 ```json
 {
-  "prompt": "TOPIC: Microservices vs monolith for e-commerce platform\n\nCONTEXT:\n- Team of 5 developers\n- 10k DAU initially, scaling to 100k\n- Django experience\n\nQUESTIONS:\n1. Operational complexity trade-offs?\n2. Time-to-market impact?\n3. Scaling implications?\n\nDESIRED OUTPUT:\n- Pros/cons comparison\n- Recommendation with justification",
+  "prompt": "TOPIC: Microservices vs monolith for e-commerce platform\n\nCONTEXT:\n- Team of 5 developers\n- 10k DAU initially, scaling to 100k\n- Django experience\n\nANALYSIS REQUIRED:\n1. Key considerations\n2. Trade-offs\n3. Risks and mitigations\n4. Your recommendation with rationale",
   "model": "gpt-5.2",
   "reasoningEffort": "xhigh",
   "sandbox": "read-only",
@@ -41,17 +48,22 @@ Or direct tool call:
 
 ### Trade-off Analysis
 
-**Goal**: Evaluate authentication approaches.
+**Goal**: Evaluate authentication approaches with dual perspectives.
 
+**Step 1 - Dispatch Codex**:
 ```json
 {
-  "prompt": "TOPIC: JWT vs opaque session tokens\n\nCONTEXT:\n- API serving web + mobile\n- Need immediate session revocation\n- High-traffic endpoints\n\nQUESTIONS:\n1. Security implications?\n2. Scalability trade-offs?\n3. Token revocation strategies?",
+  "prompt": "TOPIC: JWT vs opaque session tokens\n\nCONTEXT:\n- API serving web + mobile\n- Need immediate session revocation\n- High-traffic endpoints\n\nANALYSIS REQUIRED:\n1. Security implications\n2. Scalability trade-offs\n3. Revocation strategies\n4. Your recommendation",
   "model": "gpt-5.2",
   "reasoningEffort": "xhigh",
   "sandbox": "read-only",
   "name": "arch/auth-tokens #jwt #security"
 }
 ```
+
+**Step 2**: Claude analyzes the same topic in parallel.
+
+**Step 3**: Synthesize both into shared conclusion.
 
 ---
 
@@ -180,9 +192,47 @@ Returns all sessions with "auth" in the name.
 
 ---
 
+## Research Examples (Dual-Model)
+
+Both Claude and Codex research in parallel using web search, then merge findings.
+
+### Web Research
+
+**Goal**: Get current best practices with dual-model research.
+
+```
+/codex-bridge:research What are the current best practices for JWT token rotation in 2025?
+```
+
+**Workflow**:
+1. Dispatch Codex with web search (Step 1 tool call below)
+2. Claude researches using WebSearch in parallel
+3. Merge findings (agreements, unique insights, gaps)
+
+**Step 1 - Codex tool call**:
+```json
+{
+  "prompt": "RESEARCH TOPIC: JWT token rotation best practices in 2025\n\nCONTEXT:\n- Building authentication system for web API\n- Need to balance security with user experience\n\nINSTRUCTIONS:\nResearch thoroughly. For each finding, note source and confidence.\n\nOUTPUT:\n- Key findings with sources\n- Confidence levels\n- Gaps/unknowns",
+  "model": "gpt-5.2",
+  "reasoningEffort": "xhigh",
+  "sandbox": "read-only",
+  "config": {
+    "web_search_request": true
+  },
+  "name": "research/jwt-rotation #security #auth"
+}
+```
+
+**Step 2**: Claude searches: "JWT rotation best practices 2025", "auth0 token recommendations"
+
+**Step 3**: Merge findings showing what both found, agreements, unique insights.
+
+---
+
 ## More Examples
 
 See the skill-specific example files for additional scenarios:
 - [critical-discussion EXAMPLES.md](../skills/critical-discussion/EXAMPLES.md)
 - [coding-delegation EXAMPLES.md](../skills/coding-delegation/EXAMPLES.md)
 - [using-codex EXAMPLES.md](../skills/using-codex/EXAMPLES.md)
+- [research EXAMPLES.md](../skills/research/EXAMPLES.md)

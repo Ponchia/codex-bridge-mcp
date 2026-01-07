@@ -1,12 +1,12 @@
 {
   "name": "codex-bridge",
-  "version": "0.5.0",
-  "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversations, GPT 5.2 critical discussions, and coding delegation",
+  "version": "0.6.0",
+  "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversations, GPT 5.2 critical discussions, coding delegation, web research, and dual analysis",
   "author": {
     "name": "Zeno"
   },
   "repository": "https://github.com/Ponchia/codex-bridge-mcp",
   "homepage": "https://github.com/Ponchia/codex-bridge-mcp#readme",
   "license": "MIT",
-  "keywords": ["codex", "openai", "agent", "mcp", "multi-turn", "conversation", "gpt-5.2", "delegation", "discussion"]
+  "keywords": ["codex", "openai", "agent", "mcp", "multi-turn", "conversation", "gpt-5.2", "delegation", "discussion", "research", "dual-analysis", "web-search"]
 }
