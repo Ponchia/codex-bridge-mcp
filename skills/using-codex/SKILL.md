@@ -12,6 +12,8 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-sessions
   - mcp__plugin_codex-bridge_codex__codex-bridge-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-read-rollout
 ---
 
 # Codex Bridge Protocol
@@ -36,13 +38,15 @@ This is the **protocol reference** for direct Codex tool usage. For guided workf
 | `codex-bridge-sessions` | List/search sessions (use `query` for name search) |
 | `codex-bridge-session` | Get details for a `conversationId` |
 | `codex-bridge-name-session` | Set/update session name |
+| `codex-bridge-delete-session` | Delete session from index (cleanup failed/test sessions) |
+| `codex-bridge-read-rollout` | Read session's rollout log for debugging |
 
 ### Info Tools
 
 | Tool | Purpose |
 |------|---------|
 | `codex-bridge-info` | Bridge version, paths, session count |
-| `codex-bridge-options` | Available models, enums, policies |
+| `codex-bridge-options` | Available models, enums, policies, auth mode |
 
 ## Tool Name Variants
 
@@ -85,22 +89,29 @@ All tools return JSON:
 
 ### Available Models
 
-> **IMPORTANT**: Only GPT 5.2 models are available. Do NOT use `o3`, `o4-mini`, or other model names.
+> **MODEL RESTRICTION (ChatGPT Auth)**: Only `gpt-5.2` and `gpt-5.2-codex` work.
+> Do NOT use `o3`, `o4-mini`, `gpt-5.2-mini`, or `gpt-5.2-nano` - they will fail with ChatGPT auth.
 
-| Model | Use Case |
-|-------|----------|
-| `gpt-5.2` | General reasoning, discussions, research |
-| `gpt-5.2-codex` | Code generation and implementation |
+| Model | Use Case | Auth Required |
+|-------|----------|---------------|
+| `gpt-5.2` | General reasoning, discussions, research | ChatGPT or API |
+| `gpt-5.2-codex` | Code generation and implementation | ChatGPT or API |
+| `gpt-5.2-mini` | Faster, lighter tasks | API key only |
+| `gpt-5.2-nano` | Fastest, simplest tasks | API key only |
+| `o3`, `o4-mini` | Alternative reasoning models | API key only |
+
+Use `codex-bridge-options` to check your detected auth mode and available models.
 
 ### Reasoning Effort
 
-> **Always use `xhigh`** for best results. Lower values sacrifice quality for speed.
+> Use `high` as the default. Use `xhigh` for complex tasks where quality matters most.
 
 | Value | Use Case |
 |-------|----------|
-| `xhigh` | **Recommended default** - thorough analysis and implementation |
-| `high` | Slightly faster, still good quality |
-| `medium`/`low` | Only for trivial tasks where speed matters |
+| `xhigh` | Complex analysis, critical decisions, thorough implementation |
+| `high` | **Recommended default** - good quality-speed balance |
+| `medium` | Moderate complexity, faster turnaround |
+| `low` | Simple/trivial tasks where speed matters |
 
 ### Config Options
 
@@ -133,6 +144,23 @@ Pass additional config via the `config` object:
 | `query` | string | no | Search by name (substring) |
 | `limit` | number | no | Max results (default 50) |
 | `cursor` | string | no | Pagination cursor |
+
+### codex-bridge-delete-session
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `conversationId` | string | yes | Session to delete |
+
+Useful for cleaning up failed or test sessions from the index.
+
+### codex-bridge-read-rollout
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `conversationId` | string | yes | Session to read rollout for |
+| `lines` | number | no | Lines from end (default 50, max 500) |
+
+Returns the last N lines from the session's Codex rollout log file.
 
 ## Session Naming Convention
 

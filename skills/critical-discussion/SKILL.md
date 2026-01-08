@@ -11,6 +11,7 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-sessions
   - mcp__plugin_codex-bridge_codex__codex-bridge-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
 ---
 
 # Critical Discussion (Dual-Model)
@@ -54,12 +55,13 @@ Both Claude and Codex analyze the topic independently, then synthesize into a sh
 
 ## Tool Settings for Codex
 
-> **IMPORTANT**: Only GPT 5.2 models are available. Do NOT use `o3`, `o4-mini`, or other model names.
+> **MODEL RESTRICTION**: Only `gpt-5.2` and `gpt-5.2-codex` work with ChatGPT auth.
+> Do NOT use `o3`, `o4-mini`, `gpt-5.2-mini`, or `gpt-5.2-nano` - they will fail.
 
 | Setting | Value | Why |
 |---------|-------|-----|
 | `model` | `gpt-5.2` | Reasoning model (NOT `gpt-5.2-codex` for discussions) |
-| `reasoningEffort` | `xhigh` | **Always use xhigh** |
+| `reasoningEffort` | `high` | Good quality-speed balance (use `xhigh` for complex decisions) |
 | `sandbox` | `read-only` | Discussions don't modify files |
 | `name` | required | Use `arch/<topic> #tag1 #tag2` |
 
@@ -69,7 +71,7 @@ Both Claude and Codex analyze the topic independently, then synthesize into a sh
 {
   "prompt": "TOPIC: Architecture decision for...\n\nCONTEXT:\n- ...\n\nANALYSIS REQUIRED:\n...",
   "model": "gpt-5.2",
-  "reasoningEffort": "xhigh",
+  "reasoningEffort": "high",
   "sandbox": "read-only",
   "name": "arch/topic-name #tags"
 }

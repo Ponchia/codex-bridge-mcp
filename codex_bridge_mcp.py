@@ -15,7 +15,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 MCP_PROTOCOL_VERSION = "2025-11-25"
-BRIDGE_VERSION = "0.6.1"
+BRIDGE_VERSION = "0.7.0"
+
+# Models available for different auth modes
+# ChatGPT auth has limited model access compared to API key auth
+CHATGPT_AUTH_MODELS = ["gpt-5.2", "gpt-5.2-codex"]
+API_AUTH_MODELS = ["gpt-5.2", "gpt-5.2-codex", "gpt-5.2-mini", "gpt-5.2-nano", "o3", "o4-mini"]
 
 JSONRPC_PARSE_ERROR = -32700
 JSONRPC_INVALID_REQUEST = -32600
@@ -133,6 +138,24 @@ class SessionInfo:
             history_log_id=self.history_log_id,
             history_entry_count=self.history_entry_count,
             name=name,
+        )
+
+    def with_incremented_history(self) -> "SessionInfo":
+        """Return a new SessionInfo with history_entry_count incremented by 1."""
+        current = self.history_entry_count or 0
+        return SessionInfo(
+            conversation_id=self.conversation_id,
+            captured_at=self.captured_at,
+            model=self.model,
+            model_provider_id=self.model_provider_id,
+            approval_policy=self.approval_policy,
+            sandbox_policy=self.sandbox_policy,
+            cwd=self.cwd,
+            reasoning_effort=self.reasoning_effort,
+            rollout_path=self.rollout_path,
+            history_log_id=self.history_log_id,
+            history_entry_count=current + 1,
+            name=self.name,
         )
 
     @staticmethod
@@ -307,6 +330,27 @@ class SessionStore:
                     if len(results) >= limit:
                         break
             return results
+
+    def delete(self, conversation_id: str) -> bool:
+        """Delete a session by conversation_id. Returns True if deleted."""
+        with self._lock:
+            if conversation_id not in self._by_id:
+                return False
+            del self._by_id[conversation_id]
+            self._order = [cid for cid in self._order if cid != conversation_id]
+            self._rewrite_file()
+            return True
+
+    def increment_history(self, conversation_id: str) -> Optional[SessionInfo]:
+        """Increment the history_entry_count for a session. Returns updated session or None."""
+        with self._lock:
+            existing = self._by_id.get(conversation_id)
+            if existing is None:
+                return None
+            updated = existing.with_incremented_history()
+            self._by_id[conversation_id] = updated
+            self._rewrite_file()
+            return updated
 
     def get(self, conversation_id: str) -> Optional[SessionInfo]:
         with self._lock:
@@ -698,27 +742,64 @@ def _extract_enums_from_schema(schema_path: Path) -> dict:
     }
 
 
-def _discover_gpt52_models(codex_binary: str, sessions: SessionStore) -> dict:
-    known = ["gpt-5.2", "gpt-5.2-codex", "gpt-5.2-mini", "gpt-5.2-nano"]
-    seen = set(known)
-    discovered = list(known)
+def _detect_auth_mode(sessions: SessionStore) -> str:
+    """Detect auth mode based on session history.
 
-    # Also include anything we have actually seen in session_configured events.
+    Returns 'chatgpt' if we've seen model errors typical of ChatGPT auth,
+    'api' if we've seen API-only models work, or 'unknown' otherwise.
+    """
+    # Check if we've successfully used any API-only models
+    api_only_models = {"gpt-5.2-mini", "gpt-5.2-nano", "o3", "o4-mini"}
     try:
         with sessions._lock:
             for info in sessions._by_id.values():
-                if info.model and info.model.startswith("gpt-5.2") and info.model not in seen:
-                    seen.add(info.model)
-                    discovered.append(info.model)
+                if info.model in api_only_models:
+                    # If we have a session with an API-only model, user has API auth
+                    return "api"
     except Exception:
         pass
-    return {
-        "known": known,
-        "discovered": discovered,
-        "notes": [
-            "Model availability depends on your Codex auth mode and account entitlements.",
+    # Default to ChatGPT since it's more common and restrictive
+    return "chatgpt"
+
+
+def _discover_gpt52_models(codex_binary: str, sessions: SessionStore) -> dict:
+    auth_mode = _detect_auth_mode(sessions)
+
+    # Base available models depend on auth mode
+    if auth_mode == "api":
+        available = list(API_AUTH_MODELS)
+        notes = [
+            "API key auth detected - all models available.",
             "If a model hangs, cancel the request or lower timeoutMs.",
-        ],
+        ]
+    else:
+        available = list(CHATGPT_AUTH_MODELS)
+        notes = [
+            "ChatGPT auth detected - only gpt-5.2 and gpt-5.2-codex available.",
+            "Models like o3, o4-mini, gpt-5.2-mini, gpt-5.2-nano require API key auth.",
+            "If a model hangs, cancel the request or lower timeoutMs.",
+        ]
+
+    # Also include anything we have actually seen work in session_configured events
+    seen = set(available)
+    try:
+        with sessions._lock:
+            for info in sessions._by_id.values():
+                if info.model and info.model not in seen:
+                    # Only add models that have successfully been used
+                    seen.add(info.model)
+                    available.append(info.model)
+    except Exception:
+        pass
+
+    return {
+        "authMode": auth_mode,
+        "available": available,
+        "recommended": {
+            "reasoning": "gpt-5.2",
+            "coding": "gpt-5.2-codex",
+        },
+        "notes": notes,
     }
 
 
@@ -851,6 +932,29 @@ def _bridge_extra_tools() -> list:
                     "name": {"type": "string", "description": "The name/topic to assign to this session (e.g., 'auth-security-review')."},
                 },
                 "required": ["conversationId", "name"],
+            },
+        },
+        {
+            "name": "codex-bridge-delete-session",
+            "description": "Delete a session from the bridge's session index. Does NOT delete the underlying Codex rollout file. Useful for cleaning up failed/test sessions.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "conversationId": {"type": "string", "description": "The conversation ID to delete."},
+                },
+                "required": ["conversationId"],
+            },
+        },
+        {
+            "name": "codex-bridge-read-rollout",
+            "description": "Read the last N lines from a session's Codex rollout log file. Useful for debugging session history.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "conversationId": {"type": "string", "description": "The conversation ID to read rollout for."},
+                    "lines": {"type": "integer", "description": "Number of lines to read from the end (default 50, max 500)."},
+                },
+                "required": ["conversationId"],
             },
         },
     ]
@@ -1090,10 +1194,65 @@ class CodexBridgeServer:
 
         output_text, is_error = _normalize_upstream_tool_response(resp)
         payload: Dict[str, Any] = {"conversationId": conversation_id, "output": output_text}
-        session = self._sessions.get(conversation_id)
+
+        # Increment history count on successful reply
+        if not is_error:
+            session = self._sessions.increment_history(conversation_id)
+        else:
+            session = self._sessions.get(conversation_id)
+
         if session is not None:
             payload["session"] = _session_info_payload(session)
         return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=is_error))
+
+    def _handle_delete_session_tool(self, msg_id: Any, args: dict) -> dict:
+        cid = args.get("conversationId")
+        if not isinstance(cid, str) or not cid:
+            return _jsonrpc_response(msg_id, _tool_text_result("conversationId is required", is_error=True))
+        deleted = self._sessions.delete(cid)
+        if not deleted:
+            return _jsonrpc_response(msg_id, _tool_text_result(f"Session not found: {cid}", is_error=True))
+        return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps({"deleted": True, "conversationId": cid}), is_error=False))
+
+    def _handle_read_rollout_tool(self, msg_id: Any, args: dict) -> dict:
+        cid = args.get("conversationId")
+        if not isinstance(cid, str) or not cid:
+            return _jsonrpc_response(msg_id, _tool_text_result("conversationId is required", is_error=True))
+
+        lines_count = args.get("lines", 50)
+        if not isinstance(lines_count, int):
+            lines_count = 50
+        lines_count = max(1, min(500, lines_count))
+
+        session = self._sessions.get(cid)
+        if session is None:
+            return _jsonrpc_response(msg_id, _tool_text_result(f"Session not found: {cid}", is_error=True))
+
+        rollout_path = session.rollout_path
+        if not rollout_path:
+            return _jsonrpc_response(msg_id, _tool_text_result("Session has no rollout path", is_error=True))
+
+        try:
+            path = Path(rollout_path)
+            if not path.exists():
+                return _jsonrpc_response(msg_id, _tool_text_result(f"Rollout file not found: {rollout_path}", is_error=True))
+
+            # Read last N lines efficiently
+            with path.open("r", encoding="utf-8") as f:
+                all_lines = f.readlines()
+            last_lines = all_lines[-lines_count:]
+
+            payload = {
+                "conversationId": cid,
+                "rolloutPath": rollout_path,
+                "linesRequested": lines_count,
+                "linesReturned": len(last_lines),
+                "totalLines": len(all_lines),
+                "content": "".join(last_lines),
+            }
+            return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))
+        except Exception as e:
+            return _jsonrpc_response(msg_id, _tool_text_result(f"Error reading rollout: {e}", is_error=True))
 
     def _handle_bridge_info_tool(self, msg_id: Any) -> dict:
         codex_version = _get_codex_version(self._codex_binary) if self._codex_binary else None
@@ -1129,10 +1288,15 @@ class CodexBridgeServer:
             "reasoningEffortValues": enums.get("reasoningEffort"),
             "reasoningSummaryValues": enums.get("reasoningSummary"),
             "networkAccessValues": enums.get("networkAccess") or ["restricted", "enabled"],
-            "gpt52Models": models,
+            "models": models,
             "configKeys": {
                 "reasoningEffort": "model_reasoning_effort",
                 "reasoningSummary": "model_reasoning_summary",
+            },
+            "defaults": {
+                "reasoningEffort": "high",
+                "model": "gpt-5.2",
+                "modelForCoding": "gpt-5.2-codex",
             },
         }
         return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))
@@ -1209,6 +1373,12 @@ class CodexBridgeServer:
                 return
             if tool_name == "codex-bridge-name-session":
                 self._send(self._handle_name_session_tool(msg_id, args))
+                return
+            if tool_name == "codex-bridge-delete-session":
+                self._send(self._handle_delete_session_tool(msg_id, args))
+                return
+            if tool_name == "codex-bridge-read-rollout":
+                self._send(self._handle_read_rollout_tool(msg_id, args))
                 return
 
             self._send(

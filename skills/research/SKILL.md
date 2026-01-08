@@ -11,6 +11,7 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-sessions
   - mcp__plugin_codex-bridge_codex__codex-bridge-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
 ---
 
 # Research Skill (Dual-Model)
@@ -53,12 +54,15 @@ Ask if not provided:
 
 ## Tool Settings for Codex
 
+> **MODEL RESTRICTION**: Only `gpt-5.2` and `gpt-5.2-codex` work with ChatGPT auth.
+> Do NOT use `o3`, `o4-mini`, `gpt-5.2-mini`, or `gpt-5.2-nano` - they will fail.
+
 > **CRITICAL**: You MUST pass `config: { "web_search_request": true }` or Codex won't search the web!
 
 | Setting | Value | Why |
 |---------|-------|-----|
-| `model` | `gpt-5.2` | Reasoning model (NOT `o3`/`o4-mini` - those don't exist) |
-| `reasoningEffort` | `xhigh` | **Always use xhigh** |
+| `model` | `gpt-5.2` | Reasoning model |
+| `reasoningEffort` | `high` | Good quality-speed balance |
 | `sandbox` | `read-only` | Research only |
 | `config.web_search_request` | `true` | **REQUIRED** - Enable web search |
 | `name` | required | Use `research/<topic> #tags` |
@@ -69,7 +73,7 @@ Ask if not provided:
 {
   "prompt": "Research best practices for...",
   "model": "gpt-5.2",
-  "reasoningEffort": "xhigh",
+  "reasoningEffort": "high",
   "sandbox": "read-only",
   "name": "research/topic-name #tags",
   "config": {

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-01-08
+
+### Added
+- **Auth mode detection**: Bridge now detects ChatGPT vs API key auth and filters available models accordingly
+- **New tools**:
+  - `codex-bridge-delete-session`: Delete sessions from the index (clean up failed/test sessions)
+  - `codex-bridge-read-rollout`: Read session rollout logs for debugging
+- **History tracking**: `historyEntryCount` now increments on successful `codex-reply` calls
+- **Recommended defaults** in options output: `reasoningEffort: high`, `model: gpt-5.2`, `modelForCoding: gpt-5.2-codex`
+
+### Changed
+- **Model availability**: `codex-bridge-options` now shows `authMode` and filtered `available` models based on detected auth
+- **Default reasoning effort**: Changed recommendation from `xhigh` to `high` for better quality-speed balance
+- **Skill updates**: All skills updated with:
+  - Prominent MODEL RESTRICTION warnings about ChatGPT auth limitations
+  - Changed `reasoningEffort` from `xhigh` to `high` in examples
+  - Added `codex-bridge-delete-session` to allowed tools
+
+### Fixed
+- Sessions created with unavailable models no longer pollute the session list (users can now delete them)
+- `historyEntryCount` now properly tracks conversation turns
+
 ## [0.6.1] - 2026-01-08
 
 ### Changed

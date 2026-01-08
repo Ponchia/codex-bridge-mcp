@@ -11,6 +11,7 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-sessions
   - mcp__plugin_codex-bridge_codex__codex-bridge-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
 ---
 
 # Coding Delegation (GPT 5.2 Codex)
@@ -43,12 +44,13 @@ allowed-tools:
 
 ## Tool Settings
 
-> **IMPORTANT**: Only GPT 5.2 models are available. Do NOT use `o3`, `o4-mini`, or other model names.
+> **MODEL RESTRICTION**: Only `gpt-5.2` and `gpt-5.2-codex` work with ChatGPT auth.
+> Do NOT use `o3`, `o4-mini`, `gpt-5.2-mini`, or `gpt-5.2-nano` - they will fail.
 
 | Setting | Value | Why |
 |---------|-------|-----|
 | `model` | `gpt-5.2-codex` | Optimized for code generation |
-| `reasoningEffort` | `xhigh` | **Always use xhigh** |
+| `reasoningEffort` | `high` | Good quality-speed balance (use `xhigh` for complex tasks) |
 | `sandbox` | `workspace-write` | Needs to modify files |
 | `approval-policy` | `on-failure` | Safety with autonomy |
 | `name` | required | Use `impl/<topic> #tag1 #tag2` |
@@ -59,7 +61,7 @@ allowed-tools:
 {
   "prompt": "TASK: Implement...\n\nCONTEXT:\n- ...\n\nREQUIREMENTS:\n- ...",
   "model": "gpt-5.2-codex",
-  "reasoningEffort": "xhigh",
+  "reasoningEffort": "high",
   "sandbox": "workspace-write",
   "approval-policy": "on-failure",
   "name": "impl/feature-name #tags"
