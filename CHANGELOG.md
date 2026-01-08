@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-01-08
+
+### Added
+- **New tool: `codex-bridge-export-session`**: Export session conversations as markdown or JSON for documentation and sharing
+- **Delete rollout option**: `codex-bridge-delete-session` now supports `deleteRollout: true` to also delete the underlying Codex rollout file
+- **Session recovery**: `codex-reply` now auto-recovers sessions that were deleted from the index but still exist in Codex. Response includes `recovered: true` flag when this happens
+
+### Changed
+- **Skill files updated**: All skills now list both plugin (`mcp__plugin_codex-bridge_codex__*`) and manual (`mcp__codex__*`) tool prefixes with comments explaining each
+- **Delete session response**: Now returns `rolloutDeleted` and `rolloutError` fields when `deleteRollout: true` is used
+
+### Fixed
+- Sessions deleted from the bridge index can now be recovered when continuing them via `codex-reply`
+
 ## [0.8.1] - 2026-01-08
 
 ### Changed

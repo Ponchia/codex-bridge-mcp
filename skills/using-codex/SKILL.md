@@ -5,6 +5,7 @@ description: |
   Use when: you need direct tool access, session operations, or background execution.
   See critical-discussion for analysis tasks, coding-delegation for implementation.
 allowed-tools:
+  # Plugin installation (Claude Code extension)
   - mcp__plugin_codex-bridge_codex__codex
   - mcp__plugin_codex-bridge_codex__codex-reply
   - mcp__plugin_codex-bridge_codex__codex-bridge-info
@@ -14,6 +15,18 @@ allowed-tools:
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-read-rollout
+  - mcp__plugin_codex-bridge_codex__codex-bridge-export-session
+  # Manual MCP server installation
+  - mcp__codex__codex
+  - mcp__codex__codex-reply
+  - mcp__codex__codex-bridge-info
+  - mcp__codex__codex-bridge-options
+  - mcp__codex__codex-bridge-sessions
+  - mcp__codex__codex-bridge-session
+  - mcp__codex__codex-bridge-name-session
+  - mcp__codex__codex-bridge-delete-session
+  - mcp__codex__codex-bridge-read-rollout
+  - mcp__codex__codex-bridge-export-session
 ---
 
 # Codex Bridge Protocol
@@ -38,8 +51,9 @@ This is the **protocol reference** for direct Codex tool usage. For guided workf
 | `codex-bridge-sessions` | List/search sessions (use `query` for name search) |
 | `codex-bridge-session` | Get details for a `conversationId` |
 | `codex-bridge-name-session` | Set/update session name |
-| `codex-bridge-delete-session` | Delete session from index (cleanup failed/test sessions) |
+| `codex-bridge-delete-session` | Delete session from index (optionally delete rollout file too) |
 | `codex-bridge-read-rollout` | Read session's rollout log for debugging |
+| `codex-bridge-export-session` | Export session conversation as markdown or JSON |
 
 ### Info Tools
 
@@ -150,8 +164,19 @@ Pass additional config via the `config` object:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `conversationId` | string | yes | Session to delete |
+| `deleteRollout` | boolean | no | If true, also delete the underlying Codex rollout file (default: false) |
 
-Useful for cleaning up failed or test sessions from the index.
+Useful for cleaning up failed or test sessions. By default, only removes from the bridge index.
+Use `deleteRollout: true` for full cleanup including the Codex rollout file.
+
+### codex-bridge-export-session
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `conversationId` | string | yes | Session to export |
+| `format` | string | no | `markdown` (default) or `json` |
+
+Export a session's conversation for documentation or sharing.
 
 ### codex-bridge-read-rollout
 

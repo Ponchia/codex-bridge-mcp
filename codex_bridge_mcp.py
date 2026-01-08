@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 MCP_PROTOCOL_VERSION = "2025-11-25"
-BRIDGE_VERSION = "0.8.1"
+BRIDGE_VERSION = "0.9.0"
 
 # Models available for different auth modes
 # ChatGPT auth has limited model access compared to API key auth
@@ -985,11 +985,24 @@ def _bridge_extra_tools() -> list:
         },
         {
             "name": "codex-bridge-delete-session",
-            "description": "Delete a session from the bridge's session index. Does NOT delete the underlying Codex rollout file. Useful for cleaning up failed/test sessions.",
+            "description": "Delete a session from the bridge's session index. Optionally delete the underlying Codex rollout file. Useful for cleaning up failed/test sessions.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "conversationId": {"type": "string", "description": "The conversation ID to delete."},
+                    "deleteRollout": {"type": "boolean", "description": "If true, also delete the underlying Codex rollout file. Default: false."},
+                },
+                "required": ["conversationId"],
+            },
+        },
+        {
+            "name": "codex-bridge-export-session",
+            "description": "Export a session's conversation as formatted markdown. Useful for documentation and sharing.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "conversationId": {"type": "string", "description": "The conversation ID to export."},
+                    "format": {"type": "string", "enum": ["markdown", "json"], "description": "Export format. Default: markdown."},
                 },
                 "required": ["conversationId"],
             },
@@ -1263,6 +1276,17 @@ class CodexBridgeServer:
         # Increment history count on successful reply
         if not is_error:
             session = self._sessions.increment_history(conversation_id)
+            # Session recovery: if session was deleted from index but reply succeeded,
+            # try to recover session info from the session_configured event
+            if session is None:
+                recovered_session = client.get_session_for_request(
+                    upstream_id, timeout_s=2.0, cancel_event=inflight.cancel_event
+                )
+                if recovered_session is not None:
+                    # Re-add the recovered session to the index
+                    self._sessions.add(recovered_session)
+                    session = recovered_session
+                    payload["recovered"] = True
         else:
             session = self._sessions.get(conversation_id)
 
@@ -1274,10 +1298,36 @@ class CodexBridgeServer:
         cid = args.get("conversationId")
         if not isinstance(cid, str) or not cid:
             return _jsonrpc_response(msg_id, _tool_text_result("conversationId is required", is_error=True))
+
+        delete_rollout = args.get("deleteRollout", False)
+        rollout_deleted = False
+        rollout_error = None
+
+        # Get session info before deleting (to get rollout path)
+        session = self._sessions.get(cid)
+        rollout_path = session.rollout_path if session else None
+
         deleted = self._sessions.delete(cid)
         if not deleted:
             return _jsonrpc_response(msg_id, _tool_text_result(f"Session not found: {cid}", is_error=True))
-        return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps({"deleted": True, "conversationId": cid}), is_error=False))
+
+        # Optionally delete the rollout file
+        if delete_rollout and rollout_path:
+            try:
+                path = Path(rollout_path)
+                if path.exists():
+                    path.unlink()
+                    rollout_deleted = True
+            except Exception as e:
+                rollout_error = str(e)
+
+        result = {"deleted": True, "conversationId": cid}
+        if delete_rollout:
+            result["rolloutDeleted"] = rollout_deleted
+            if rollout_error:
+                result["rolloutError"] = rollout_error
+
+        return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(result), is_error=False))
 
     def _handle_read_rollout_tool(self, msg_id: Any, args: dict) -> dict:
         cid = args.get("conversationId")
@@ -1318,6 +1368,127 @@ class CodexBridgeServer:
             return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))
         except Exception as e:
             return _jsonrpc_response(msg_id, _tool_text_result(f"Error reading rollout: {e}", is_error=True))
+
+    def _handle_export_session_tool(self, msg_id: Any, args: dict) -> dict:
+        cid = args.get("conversationId")
+        if not isinstance(cid, str) or not cid:
+            return _jsonrpc_response(msg_id, _tool_text_result("conversationId is required", is_error=True))
+
+        export_format = args.get("format", "markdown")
+        if export_format not in ("markdown", "json"):
+            export_format = "markdown"
+
+        session = self._sessions.get(cid)
+        if session is None:
+            return _jsonrpc_response(msg_id, _tool_text_result(f"Session not found: {cid}", is_error=True))
+
+        rollout_path = session.rollout_path
+        if not rollout_path:
+            return _jsonrpc_response(msg_id, _tool_text_result("Session has no rollout path", is_error=True))
+
+        try:
+            path = Path(rollout_path)
+            if not path.exists():
+                return _jsonrpc_response(msg_id, _tool_text_result(f"Rollout file not found: {rollout_path}", is_error=True))
+
+            # Parse the rollout JSONL file
+            messages: List[dict] = []
+            with path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    event_type = entry.get("type")
+                    payload = entry.get("payload", {})
+
+                    # Extract user messages
+                    if event_type == "event_msg" and payload.get("type") == "user_message":
+                        messages.append({
+                            "role": "user",
+                            "content": payload.get("message", ""),
+                            "timestamp": entry.get("timestamp"),
+                        })
+
+                    # Extract assistant messages
+                    if event_type == "event_msg" and payload.get("type") == "agent_message":
+                        messages.append({
+                            "role": "assistant",
+                            "content": payload.get("message", ""),
+                            "timestamp": entry.get("timestamp"),
+                        })
+
+                    # Also capture response_item messages for completeness
+                    if event_type == "response_item" and payload.get("type") == "message":
+                        role = payload.get("role")
+                        content_items = payload.get("content", [])
+                        text_parts = []
+                        for item in content_items:
+                            if isinstance(item, dict) and item.get("type") in ("input_text", "output_text"):
+                                text = item.get("text", "")
+                                if text:
+                                    text_parts.append(text)
+                        if text_parts and role in ("user", "assistant"):
+                            # Skip if this is a duplicate of an event_msg we already captured
+                            combined_text = "\n".join(text_parts)
+                            if not messages or messages[-1].get("content") != combined_text:
+                                messages.append({
+                                    "role": role,
+                                    "content": combined_text,
+                                    "timestamp": entry.get("timestamp"),
+                                })
+
+            if export_format == "json":
+                payload = {
+                    "conversationId": cid,
+                    "name": session.name,
+                    "model": session.model,
+                    "messages": messages,
+                }
+                return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))
+
+            # Format as markdown
+            md_lines = [
+                f"# Codex Session: {session.name or cid}",
+                "",
+                "## Metadata",
+                f"- **Conversation ID**: `{cid}`",
+                f"- **Model**: {session.model or 'unknown'}",
+                f"- **Sandbox**: {session.sandbox_policy.get('type', 'unknown') if session.sandbox_policy else 'unknown'}",
+                f"- **Reasoning Effort**: {session.reasoning_effort or 'unknown'}",
+                "",
+                "## Conversation",
+                "",
+            ]
+
+            for msg in messages:
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+                timestamp = msg.get("timestamp", "")
+
+                if role == "user":
+                    md_lines.append(f"### User {f'({timestamp})' if timestamp else ''}")
+                else:
+                    md_lines.append(f"### Assistant {f'({timestamp})' if timestamp else ''}")
+
+                md_lines.append("")
+                md_lines.append(content)
+                md_lines.append("")
+
+            markdown = "\n".join(md_lines)
+            payload = {
+                "conversationId": cid,
+                "format": "markdown",
+                "content": markdown,
+            }
+            return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))
+
+        except Exception as e:
+            return _jsonrpc_response(msg_id, _tool_text_result(f"Error exporting session: {e}", is_error=True))
 
     def _handle_bridge_info_tool(self, msg_id: Any) -> dict:
         codex_version = _get_codex_version(self._codex_binary) if self._codex_binary else None
@@ -1446,6 +1617,9 @@ class CodexBridgeServer:
                 return
             if tool_name == "codex-bridge-read-rollout":
                 self._send(self._handle_read_rollout_tool(msg_id, args))
+                return
+            if tool_name == "codex-bridge-export-session":
+                self._send(self._handle_export_session_tool(msg_id, args))
                 return
 
             self._send(

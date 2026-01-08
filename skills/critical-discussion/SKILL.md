@@ -6,12 +6,22 @@ description: |
   Avoid when: you need code changes (use coding-delegation), simple factual questions.
   Triggers: "discuss", "analyze", "evaluate", "trade-offs", "architecture", "ADR", "second opinion".
 allowed-tools:
+  # Plugin installation (Claude Code extension)
   - mcp__plugin_codex-bridge_codex__codex
   - mcp__plugin_codex-bridge_codex__codex-reply
   - mcp__plugin_codex-bridge_codex__codex-bridge-sessions
   - mcp__plugin_codex-bridge_codex__codex-bridge-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-export-session
+  # Manual MCP server installation
+  - mcp__codex__codex
+  - mcp__codex__codex-reply
+  - mcp__codex__codex-bridge-sessions
+  - mcp__codex__codex-bridge-session
+  - mcp__codex__codex-bridge-name-session
+  - mcp__codex__codex-bridge-delete-session
+  - mcp__codex__codex-bridge-export-session
 ---
 
 # Critical Discussion (Dual-Model)

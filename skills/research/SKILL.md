@@ -6,12 +6,22 @@ description: |
   Avoid when: Codex's training data is sufficient, speed matters more than thoroughness.
   Triggers: "research", "look up", "find current", "what's the latest", "best practices for"
 allowed-tools:
+  # Plugin installation (Claude Code extension)
   - mcp__plugin_codex-bridge_codex__codex
   - mcp__plugin_codex-bridge_codex__codex-reply
   - mcp__plugin_codex-bridge_codex__codex-bridge-sessions
   - mcp__plugin_codex-bridge_codex__codex-bridge-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-name-session
   - mcp__plugin_codex-bridge_codex__codex-bridge-delete-session
+  - mcp__plugin_codex-bridge_codex__codex-bridge-export-session
+  # Manual MCP server installation
+  - mcp__codex__codex
+  - mcp__codex__codex-reply
+  - mcp__codex__codex-bridge-sessions
+  - mcp__codex__codex-bridge-session
+  - mcp__codex__codex-bridge-name-session
+  - mcp__codex__codex-bridge-delete-session
+  - mcp__codex__codex-bridge-export-session
 ---
 
 # Research Skill (Dual-Model)
