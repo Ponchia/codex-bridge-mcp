@@ -125,6 +125,28 @@ Present merged research:
 5. **Sources**: List of sources consulted
 6. **Session info**: Name + conversationId
 
+## Timeout Recommendations
+
+Web search tasks take longer than local operations. Use appropriate timeouts:
+
+| Task Type | Recommended `timeoutMs` |
+|-----------|------------------------|
+| Simple lookup (no web) | `120000` (2 min) |
+| Web search research | Omit (use default 600s) |
+| Complex multi-source | `300000`-`600000` (5-10 min) |
+
+> **TIP**: Omit `timeoutMs` for research tasks to use the default 10-minute timeout.
+> Passing a short timeout (e.g., 120000ms) will cause web search tasks to fail.
+
+### Why Timeouts Matter
+
+Web search + reasoning is slower than local operations:
+1. Codex must perform web searches (network latency)
+2. Process and synthesize multiple sources
+3. Generate reasoned output with citations
+
+A 2-minute timeout is **insufficient** for most research tasks. When in doubt, omit `timeoutMs`.
+
 ## Stop Conditions
 
 Ask user before proceeding if:

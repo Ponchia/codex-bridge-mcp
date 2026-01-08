@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 MCP_PROTOCOL_VERSION = "2025-11-25"
-BRIDGE_VERSION = "0.9.0"
+BRIDGE_VERSION = "0.9.1"
 
 # Models available for different auth modes
 # ChatGPT auth has limited model access compared to API key auth
