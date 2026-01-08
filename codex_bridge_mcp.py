@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
-MCP_PROTOCOL_VERSION = "2024-11-05"
-BRIDGE_VERSION = "0.4.2"
+MCP_PROTOCOL_VERSION = "2025-11-25"
+BRIDGE_VERSION = "0.6.1"
 
 JSONRPC_PARSE_ERROR = -32700
 JSONRPC_INVALID_REQUEST = -32600
