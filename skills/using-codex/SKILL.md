@@ -75,13 +75,32 @@ All tools return JSON:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `prompt` | string | yes | Task description |
-| `model` | string | no | `gpt-5.2`, `gpt-5.2-codex`, `gpt-5.2-mini` |
-| `reasoningEffort` | string | no | `none`, `minimal`, `low`, `medium`, `high`, `xhigh` |
+| `model` | string | no | See **Available Models** below |
+| `reasoningEffort` | string | no | `xhigh` (recommended), `high`, `medium`, `low` |
 | `sandbox` | string | no | `read-only`, `workspace-write`, `danger-full-access` |
 | `approval-policy` | string | no | `untrusted`, `on-failure`, `on-request`, `never` |
 | `name` | string | no | Session name for later search |
 | `timeoutMs` | number | no | Timeout in ms (max 600000) |
 | `config` | object | no | Config overrides (see below) |
+
+### Available Models
+
+> **IMPORTANT**: Only GPT 5.2 models are available. Do NOT use `o3`, `o4-mini`, or other model names.
+
+| Model | Use Case |
+|-------|----------|
+| `gpt-5.2` | General reasoning, discussions, research |
+| `gpt-5.2-codex` | Code generation and implementation |
+
+### Reasoning Effort
+
+> **Always use `xhigh`** for best results. Lower values sacrifice quality for speed.
+
+| Value | Use Case |
+|-------|----------|
+| `xhigh` | **Recommended default** - thorough analysis and implementation |
+| `high` | Slightly faster, still good quality |
+| `medium`/`low` | Only for trivial tasks where speed matters |
 
 ### Config Options
 

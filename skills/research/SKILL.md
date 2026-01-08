@@ -53,13 +53,30 @@ Ask if not provided:
 
 ## Tool Settings for Codex
 
+> **CRITICAL**: You MUST pass `config: { "web_search_request": true }` or Codex won't search the web!
+
 | Setting | Value | Why |
 |---------|-------|-----|
-| `model` | `gpt-5.2` | Reasoning model, not code-optimized |
-| `reasoningEffort` | `xhigh` | Thorough research |
+| `model` | `gpt-5.2` | Reasoning model (NOT `o3`/`o4-mini` - those don't exist) |
+| `reasoningEffort` | `xhigh` | **Always use xhigh** |
 | `sandbox` | `read-only` | Research only |
-| `config.web_search_request` | `true` | Enable web search |
+| `config.web_search_request` | `true` | **REQUIRED** - Enable web search |
 | `name` | required | Use `research/<topic> #tags` |
+
+### Complete Tool Call Example
+
+```json
+{
+  "prompt": "Research best practices for...",
+  "model": "gpt-5.2",
+  "reasoningEffort": "xhigh",
+  "sandbox": "read-only",
+  "name": "research/topic-name #tags",
+  "config": {
+    "web_search_request": true
+  }
+}
+```
 
 ## Codex Prompt Skeleton
 

@@ -54,12 +54,26 @@ Both Claude and Codex analyze the topic independently, then synthesize into a sh
 
 ## Tool Settings for Codex
 
+> **IMPORTANT**: Only GPT 5.2 models are available. Do NOT use `o3`, `o4-mini`, or other model names.
+
 | Setting | Value | Why |
 |---------|-------|-----|
-| `model` | `gpt-5.2` | Base model for reasoning (NOT codex) |
-| `reasoningEffort` | `xhigh` | Maximum analysis depth |
+| `model` | `gpt-5.2` | Reasoning model (NOT `gpt-5.2-codex` for discussions) |
+| `reasoningEffort` | `xhigh` | **Always use xhigh** |
 | `sandbox` | `read-only` | Discussions don't modify files |
 | `name` | required | Use `arch/<topic> #tag1 #tag2` |
+
+### Complete Tool Call Example
+
+```json
+{
+  "prompt": "TOPIC: Architecture decision for...\n\nCONTEXT:\n- ...\n\nANALYSIS REQUIRED:\n...",
+  "model": "gpt-5.2",
+  "reasoningEffort": "xhigh",
+  "sandbox": "read-only",
+  "name": "arch/topic-name #tags"
+}
+```
 
 ## Codex Prompt Skeleton
 

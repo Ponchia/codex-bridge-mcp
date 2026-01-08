@@ -43,13 +43,28 @@ allowed-tools:
 
 ## Tool Settings
 
+> **IMPORTANT**: Only GPT 5.2 models are available. Do NOT use `o3`, `o4-mini`, or other model names.
+
 | Setting | Value | Why |
 |---------|-------|-----|
 | `model` | `gpt-5.2-codex` | Optimized for code generation |
-| `reasoningEffort` | `xhigh` | Complex implementations |
+| `reasoningEffort` | `xhigh` | **Always use xhigh** |
 | `sandbox` | `workspace-write` | Needs to modify files |
 | `approval-policy` | `on-failure` | Safety with autonomy |
 | `name` | required | Use `impl/<topic> #tag1 #tag2` |
+
+### Complete Tool Call Example
+
+```json
+{
+  "prompt": "TASK: Implement...\n\nCONTEXT:\n- ...\n\nREQUIREMENTS:\n- ...",
+  "model": "gpt-5.2-codex",
+  "reasoningEffort": "xhigh",
+  "sandbox": "workspace-write",
+  "approval-policy": "on-failure",
+  "name": "impl/feature-name #tags"
+}
+```
 
 ## Prompt Skeleton
 

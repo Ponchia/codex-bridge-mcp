@@ -28,13 +28,40 @@ Every Codex interaction creates a **session** with a `conversationId`. Sessions 
 - **Searchable**: Name sessions well and find them with `codex-bridge-sessions`
 - **Persistent**: Metadata stored in `~/.codex-bridge-mcp/sessions.jsonl`
 
+### Available Models
+
+> **Only GPT 5.2 models are available.** Do NOT use `o3`, `o4-mini`, or other model names.
+
+| Model | Use Case |
+|-------|----------|
+| `gpt-5.2` | General reasoning, discussions, research |
+| `gpt-5.2-codex` | Code generation and implementation |
+
+### Reasoning Effort
+
+> **Always use `xhigh`** for best results.
+
+```json
+{ "reasoningEffort": "xhigh" }
+```
+
+### Web Search
+
+For research tasks, you MUST enable web search in the config:
+
+```json
+{
+  "config": { "web_search_request": true }
+}
+```
+
 ### Safety Knobs
 
 | Setting | Options | Default |
 |---------|---------|---------|
 | `sandbox` | `read-only`, `workspace-write`, `danger-full-access` | varies by skill |
 | `approval-policy` | `untrusted`, `on-failure`, `on-request`, `never` | `on-failure` |
-| `reasoningEffort` | `none`, `minimal`, `low`, `medium`, `high`, `xhigh` | `xhigh` for skills |
+| `reasoningEffort` | `xhigh`, `high`, `medium`, `low` | **`xhigh` (always recommended)** |
 
 ## Quick Links
 
