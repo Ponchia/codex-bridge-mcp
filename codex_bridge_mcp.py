@@ -15,12 +15,26 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 MCP_PROTOCOL_VERSION = "2025-11-25"
-BRIDGE_VERSION = "0.7.0"
+BRIDGE_VERSION = "0.8.1"
 
 # Models available for different auth modes
 # ChatGPT auth has limited model access compared to API key auth
 CHATGPT_AUTH_MODELS = ["gpt-5.2", "gpt-5.2-codex"]
 API_AUTH_MODELS = ["gpt-5.2", "gpt-5.2-codex", "gpt-5.2-mini", "gpt-5.2-nano", "o3", "o4-mini"]
+
+# Task types for automatic model selection
+TASK_TYPES = ["coding", "discussion", "research"]
+DEFAULT_TASK_TYPE = "coding"
+
+# Model defaults by task type (matches recommended in _discover_gpt52_models)
+TASK_MODEL_DEFAULTS = {
+    "coding": "gpt-5.2-codex",
+    "discussion": "gpt-5.2",
+    "research": "gpt-5.2",
+}
+
+DEFAULT_REASONING_EFFORT = "xhigh"
+DEFAULT_SANDBOX = "danger-full-access"
 
 JSONRPC_PARSE_ERROR = -32700
 JSONRPC_INVALID_REQUEST = -32600
@@ -803,6 +817,29 @@ def _discover_gpt52_models(codex_binary: str, sessions: SessionStore) -> dict:
     }
 
 
+def _resolve_model(
+    requested_model: Optional[str],
+    task_type: Optional[str],
+    available_models: List[str],
+) -> Tuple[str, Optional[str]]:
+    """
+    Resolve the model to use based on request and task type.
+
+    Returns: (model_to_use, warning_message_or_none)
+    """
+    effective_task = task_type if task_type in TASK_TYPES else DEFAULT_TASK_TYPE
+    default_model = TASK_MODEL_DEFAULTS[effective_task]
+
+    if not requested_model:
+        return default_model, None
+
+    if requested_model in available_models:
+        return requested_model, None
+
+    warning = f"Model '{requested_model}' not available. Using '{default_model}' instead."
+    return default_model, warning
+
+
 def _normalize_upstream_tool_response(resp: dict) -> Tuple[str, bool]:
     if not isinstance(resp, dict):
         return _json_dumps(resp), True
@@ -831,12 +868,24 @@ def _bridge_tools() -> list:
     return [
         {
             "name": "codex",
-            "description": "Run a Codex session and return JSON {conversationId, output, session}.",
+            "description": (
+                "Run a Codex session and return JSON {conversationId, output, session}.\n\n"
+                "**Automatic Model Selection:**\n"
+                "- taskType='coding' (default) -> gpt-5.2-codex\n"
+                "- taskType='discussion' or 'research' -> gpt-5.2\n"
+                "- Invalid models fall back to task-appropriate default\n"
+                "- reasoningEffort defaults to 'xhigh'"
+            ),
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "prompt": {"type": "string", "description": "Initial user prompt."},
-                    "model": {"type": "string", "description": "Optional override for the model name."},
+                    "prompt": {"type": "string", "description": "The *initial user prompt* to start the Codex conversation."},
+                    "taskType": {
+                        "type": "string",
+                        "enum": ["coding", "discussion", "research"],
+                        "description": "Task type for automatic model selection. Defaults to 'coding'.",
+                    },
+                    "model": {"type": "string", "description": "Optional override for the model name (e.g. \"gpt-5.2\", \"o3\"). Validated against available models."},
                     "profile": {"type": "string", "description": "Optional Codex config profile name."},
                     "cwd": {"type": "string", "description": "Optional working directory."},
                     "sandbox": {"type": "string", "description": "Sandbox mode."},
@@ -1113,6 +1162,18 @@ class CodexBridgeServer:
         reasoning_effort = args.pop("reasoningEffort", None)
         reasoning_summary = args.pop("reasoningSummary", None)
         session_name = args.pop("name", None)  # Bridge-specific: name for the session
+        task_type = args.pop("taskType", None)  # Bridge-specific: for automatic model selection
+
+        # Resolve model based on task type and availability
+        models_info = _discover_gpt52_models(self._codex_binary or "", self._sessions)
+        available = models_info.get("available", API_AUTH_MODELS)
+        requested_model = args.get("model")
+        resolved_model, model_warning = _resolve_model(requested_model, task_type, available)
+        args["model"] = resolved_model
+
+        # Default reasoning effort to xhigh if not specified
+        if not reasoning_effort:
+            reasoning_effort = DEFAULT_REASONING_EFFORT
 
         timeout_s = 600.0
         if isinstance(timeout_ms, int) and timeout_ms > 0:
@@ -1135,6 +1196,10 @@ class CodexBridgeServer:
             cfg = dict(cfg)
             cfg["model_reasoning_summary"] = reasoning_summary
             args["config"] = cfg
+
+        # Default sandbox to danger-full-access if not specified
+        if not args.get("sandbox"):
+            args["sandbox"] = DEFAULT_SANDBOX
 
         client = self._get_client()
         upstream_id, resp = client.call_tool(
@@ -1294,9 +1359,11 @@ class CodexBridgeServer:
                 "reasoningSummary": "model_reasoning_summary",
             },
             "defaults": {
-                "reasoningEffort": "high",
-                "model": "gpt-5.2",
-                "modelForCoding": "gpt-5.2-codex",
+                "reasoningEffort": DEFAULT_REASONING_EFFORT,
+                "sandbox": DEFAULT_SANDBOX,
+                "taskTypes": TASK_TYPES,
+                "taskModelDefaults": TASK_MODEL_DEFAULTS,
+                "defaultTaskType": DEFAULT_TASK_TYPE,
             },
         }
         return _jsonrpc_response(msg_id, _tool_text_result(_json_dumps(payload), is_error=False))

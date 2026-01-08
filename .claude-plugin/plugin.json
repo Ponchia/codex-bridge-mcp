@@ -1,6 +1,6 @@
 {
   "name": "codex-bridge",
-  "version": "0.6.1",
+  "version": "0.8.1",
   "description": "Use OpenAI Codex as an agent from Claude Code with multi-turn conversations, GPT 5.2 critical discussions, coding delegation, web research, and dual analysis",
   "author": {
     "name": "Zeno"

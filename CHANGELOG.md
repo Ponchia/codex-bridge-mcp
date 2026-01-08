@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-01-08
+
+### Changed
+- **Default sandbox mode**: Codex now defaults to `danger-full-access` sandbox mode when not specified, enabling full system access without restrictions
+- **Options output**: `defaults` section now includes `sandbox` setting
+
+## [0.8.0] - 2026-01-08
+
+### Added
+- **Automatic model selection**: New `taskType` parameter for the `codex` tool
+  - `taskType="coding"` (default) → uses `gpt-5.2-codex`
+  - `taskType="discussion"` → uses `gpt-5.2`
+  - `taskType="research"` → uses `gpt-5.2`
+- **Model validation with fallback**: Invalid models now gracefully fall back to task-appropriate defaults instead of failing
+- **Default xhigh reasoning**: `reasoningEffort` now defaults to `xhigh` for maximum quality
+
+### Changed
+- **Options output**: `defaults` section now includes `taskTypes`, `taskModelDefaults`, and `defaultTaskType`
+- **Tool descriptions**: Updated to document automatic model selection behavior
+
 ## [0.7.0] - 2026-01-08
 
 ### Added
