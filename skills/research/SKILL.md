@@ -67,8 +67,6 @@ Ask if not provided:
 
 ## Workflow (True Parallel Execution)
 
-### Option A: Background Task (Recommended)
-
 1. **Dispatch Codex in background** using Task tool:
    ```json
    {
@@ -78,24 +76,19 @@ Ask if not provided:
      "prompt": "Use mcp__codex__codex with prompt='RESEARCH: ...' config={\"web_search_request\": true} model='gpt-5.2' sandbox='read-only' name='research/<topic>'"
    }
    ```
-   Save the `task_id`.
+   **Save the `task_id`**. Codex is now researching in background.
 
-2. **Claude researches immediately** using WebSearch (no waiting)
+2. **IMMEDIATELY** Claude researches using WebSearch (DO NOT WAIT for Codex):
+   - Search for best practices and recent developments
+   - Search for authoritative sources
+   - Document findings with sources and confidence
 
-3. **Retrieve Codex result** using TaskOutput:
+3. **Retrieve Codex result** using TaskOutput when Claude's research is done:
    ```json
    { "task_id": "<saved task_id>", "block": true, "timeout": 600000 }
    ```
 
-4. **Merge findings** from both sources
-
-### Option B: Parallel Tool Calls
-
-Make BOTH calls in a single message for parallel execution:
-- Call 1: `mcp__codex__codex` with `config: { "web_search_request": true }`
-- Call 2: `WebSearch` with the same query
-
-Both execute simultaneously. Merge when both return.
+4. **Merge findings** from both sources into unified output
 
 ## Tool Settings for Codex
 

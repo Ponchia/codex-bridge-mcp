@@ -11,13 +11,9 @@ Research this topic using both Claude and Codex **in true parallel**, then merge
 
 $ARGUMENTS
 
-## Workflow Options
+## Workflow (True Parallel Execution)
 
-Choose the approach based on research complexity:
-
-### Option A: Background Task (Recommended for thorough research)
-
-#### Step 1: Dispatch Codex Research in Background
+### Step 1: Dispatch Codex Research in Background
 
 Use the Task tool to run Codex without blocking:
 
@@ -27,24 +23,26 @@ Use the Task tool to run Codex without blocking:
   "description": "Codex researches topic",
   "subagent_type": "general-purpose",
   "run_in_background": true,
-  "prompt": "Use the mcp__codex__codex tool with these parameters:\n- prompt: 'RESEARCH TOPIC: $ARGUMENTS\n\nCONTEXT:\n- [Why this research matters]\n- [Current understanding]\n\nINSTRUCTIONS:\nResearch thoroughly. For each finding:\n1. State the finding clearly\n2. Note the source/basis\n3. Rate confidence (High/Medium/Low)\n4. Flag caveats\n\nOUTPUT:\n- Key findings with sources\n- Confidence levels\n- Gaps/unknowns'\n- model: 'gpt-5.2'\n- reasoningEffort: 'xhigh'\n- sandbox: 'read-only'\n- config: {\"web_search_request\": true}\n- name: 'research/<topic> #tags'\n\nReturn the full tool response."
+  "prompt": "Use the mcp__codex__codex tool with these parameters:\n- prompt: 'RESEARCH TOPIC: $ARGUMENTS\n\nINSTRUCTIONS:\nResearch thoroughly. For each finding:\n1. State the finding clearly\n2. Note the source/basis\n3. Rate confidence (High/Medium/Low)\n4. Flag caveats\n\nOUTPUT:\n- Key findings with sources\n- Confidence levels\n- Gaps/unknowns'\n- model: 'gpt-5.2'\n- reasoningEffort: 'xhigh'\n- sandbox: 'read-only'\n- config: {\"web_search_request\": true}\n- name: 'research/<topic> #tags'\n\nReturn the full tool response."
 }
 ```
 
-**Save the `task_id`**. Codex is now researching in background with web search.
+**Save the `task_id`** from the response. Codex is now researching in background.
 
-#### Step 2: Claude Researches Immediately (No Waiting)
+### Step 2: Claude Researches Immediately (No Waiting)
 
-While Codex works in background, use WebSearch:
+**IMMEDIATELY** after dispatching Codex, Claude researches the same topic using WebSearch:
 
 1. Search for current best practices and recent developments
 2. Search for authoritative sources (official docs, expert blogs)
 3. Search for case studies or real-world examples
 4. Apply your own reasoning to evaluate findings
 
-Document findings with sources and confidence levels.
+Document your findings with sources and confidence levels thoroughly.
 
-#### Step 3: Retrieve Codex Result
+**DO NOT WAIT** for Codex - start your WebSearch calls right away.
+
+### Step 3: Retrieve Codex Result
 
 When Claude's research is complete, get Codex's result:
 
@@ -53,40 +51,13 @@ When Claude's research is complete, get Codex's result:
 { "task_id": "<saved task_id>", "block": true, "timeout": 600000 }
 ```
 
-#### Step 4: Merge Findings
+### Step 4: Merge Findings
 
-Combine both research outputs into unified findings.
-
----
-
-### Option B: Parallel Tool Calls (Faster for simple queries)
-
-Make BOTH calls in a **single message** for simultaneous execution:
-
-**In the same response**, call both tools in parallel:
-
-**Tool call 1** - Codex with web search:
-```json
-// mcp__codex__codex
-{
-  "prompt": "RESEARCH: $ARGUMENTS\n\nFind key findings with sources. Rate confidence.",
-  "model": "gpt-5.2",
-  "reasoningEffort": "high",
-  "sandbox": "read-only",
-  "config": { "web_search_request": true },
-  "name": "research/<topic> #tags"
-}
-```
-
-**Tool call 2** - Claude's WebSearch:
-```json
-// WebSearch
-{ "query": "$ARGUMENTS best practices 2025" }
-```
-
-Both execute simultaneously. Merge results when both return.
-
----
+Combine both research outputs into unified findings:
+- Identify where both found the same information (high confidence)
+- Note unique insights from each source
+- Flag any conflicting information
+- List gaps neither could fill
 
 ## Output Contract
 

@@ -250,26 +250,24 @@ Both Claude and Codex research the topic **in parallel** using web search, then 
 2. **Context**: Why this research matters
 3. **Scope**: Breadth vs depth preference
 
-## Workflow Options
+## Workflow (True Parallel Execution)
 
-### Option A: Background Task (Recommended for thorough research)
-
-#### Step 1: Dispatch Codex Research in Background
+### Step 1: Dispatch Codex Research in Background
 
 ```json
 {
   "description": "Codex researches topic",
   "subagent_type": "general-purpose",
   "run_in_background": true,
-  "prompt": "Use the mcp__codex__codex tool with these parameters:\n- prompt: 'RESEARCH TOPIC: <topic>\n\nCONTEXT:\n- <why this matters>\n\nINSTRUCTIONS:\nResearch thoroughly. For each finding:\n1. State the finding clearly\n2. Note the source/basis\n3. Rate confidence (High/Medium/Low)\n4. Flag caveats\n\nOUTPUT:\n- Key findings with sources\n- Confidence levels\n- Gaps/unknowns'\n- model: 'gpt-5.2'\n- reasoningEffort: 'xhigh'\n- sandbox: 'read-only'\n- config: {\"web_search_request\": true}\n- name: 'research/<topic> #tags'\n\nReturn the full tool response."
+  "prompt": "Use the mcp__codex__codex tool with these parameters:\n- prompt: 'RESEARCH TOPIC: <topic>\n\nINSTRUCTIONS:\nResearch thoroughly. For each finding:\n1. State the finding clearly\n2. Note the source/basis\n3. Rate confidence (High/Medium/Low)\n4. Flag caveats\n\nOUTPUT:\n- Key findings with sources\n- Confidence levels\n- Gaps/unknowns'\n- model: 'gpt-5.2'\n- reasoningEffort: 'xhigh'\n- sandbox: 'read-only'\n- config: {\"web_search_request\": true}\n- name: 'research/<topic> #tags'\n\nReturn the full tool response."
 }
 ```
 
-**Save the `task_id`**.
+**Save the `task_id`** from the response. Codex is now researching in background.
 
-#### Step 2: Claude Researches Immediately
+### Step 2: Claude Researches Immediately (No Waiting)
 
-While Codex works, use WebSearch:
+**IMMEDIATELY** after dispatching Codex, Claude researches the same topic using WebSearch:
 
 ```json
 // WebSearch tool - make multiple searches
@@ -278,28 +276,26 @@ While Codex works, use WebSearch:
 { "query": "<topic> real-world examples" }
 ```
 
-Document findings with sources and confidence levels.
+Document your findings with sources and confidence levels thoroughly.
 
-#### Step 3: Retrieve Codex Result
+**DO NOT WAIT** for Codex - start your WebSearch calls right away.
+
+### Step 3: Retrieve Codex Result
+
+When Claude's research is complete, get Codex's result:
 
 ```json
 // TaskOutput tool
 { "task_id": "<saved task_id>", "block": true, "timeout": 600000 }
 ```
 
-#### Step 4: Merge Findings
+### Step 4: Merge Findings
 
-Combine both research outputs into unified findings.
-
-### Option B: Parallel Tool Calls (Faster for simple queries)
-
-Make BOTH calls in a **single message** for true parallel execution:
-
-**In the same response**, call:
-1. `mcp__codex__codex` with `config: { "web_search_request": true }`
-2. `WebSearch` with the same query
-
-Both execute simultaneously. Merge results when both return.
+Combine both research outputs into unified findings:
+- Identify where both found the same information (high confidence)
+- Note unique insights from each source
+- Flag any conflicting information
+- List gaps neither could fill
 
 ## Output Contract
 
