@@ -1,6 +1,7 @@
 ---
 name: using-codex
 description: |
+  DEPRECATED: Use codex-bridge skill instead (`/codex <prompt>` for direct access).
   Protocol reference for Codex bridge tools and multi-turn conversations.
   Use when: you need direct tool access, session operations, or background execution.
   See critical-discussion for analysis tasks, coding-delegation for implementation.
@@ -31,9 +32,13 @@ allowed-tools:
 
 # Codex Bridge Protocol
 
+> **DEPRECATED**: This skill is superseded by the unified `codex-bridge` skill.
+> Use `/codex <prompt>` for direct access, or see the unified skill for all modes.
+
 This is the **protocol reference** for direct Codex tool usage. For guided workflows, see:
-- [critical-discussion](../critical-discussion/SKILL.md) - analysis and decisions
-- [coding-delegation](../coding-delegation/SKILL.md) - implementation tasks
+- [codex-bridge](../codex-bridge/SKILL.md) - **unified skill (recommended)**
+- [critical-discussion](../critical-discussion/SKILL.md) - analysis and decisions (deprecated)
+- [coding-delegation](../coding-delegation/SKILL.md) - implementation tasks (deprecated)
 
 ## Tools
 

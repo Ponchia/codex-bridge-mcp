@@ -5,37 +5,37 @@ argument-hint: <research topic or question>
 
 # Research (Dual-Model)
 
-Research this topic using both Claude and Codex in parallel, then merge findings.
+Research this topic using both Claude and Codex **in true parallel**, then merge findings.
 
 ## Topic
 
 $ARGUMENTS
 
-## Workflow
+## Workflow Options
 
-### Step 1: Dispatch Codex Research (Background)
+Choose the approach based on research complexity:
 
-Start Codex researching with web search enabled:
+### Option A: Background Task (Recommended for thorough research)
+
+#### Step 1: Dispatch Codex Research in Background
+
+Use the Task tool to run Codex without blocking:
 
 ```json
-// mcp__plugin_codex-bridge_codex__codex
+// Task tool
 {
-  "prompt": "RESEARCH TOPIC: $ARGUMENTS\n\nCONTEXT:\n- [Why this research matters]\n- [Current understanding]\n\nINSTRUCTIONS:\nResearch this topic thoroughly. For each finding:\n1. State the finding clearly\n2. Note the source/basis\n3. Rate confidence (High/Medium/Low)\n4. Flag any caveats or uncertainties\n\nOUTPUT FORMAT:\n- Key findings (with sources where available)\n- Confidence level per finding\n- Gaps/unknowns\n- Suggested follow-ups",
-  "model": "gpt-5.2",
-  "reasoningEffort": "xhigh",
-  "sandbox": "read-only",
-  "config": {
-    "web_search_request": true
-  },
-  "name": "research/<topic> #tags"
+  "description": "Codex researches topic",
+  "subagent_type": "general-purpose",
+  "run_in_background": true,
+  "prompt": "Use the mcp__codex__codex tool with these parameters:\n- prompt: 'RESEARCH TOPIC: $ARGUMENTS\n\nCONTEXT:\n- [Why this research matters]\n- [Current understanding]\n\nINSTRUCTIONS:\nResearch thoroughly. For each finding:\n1. State the finding clearly\n2. Note the source/basis\n3. Rate confidence (High/Medium/Low)\n4. Flag caveats\n\nOUTPUT:\n- Key findings with sources\n- Confidence levels\n- Gaps/unknowns'\n- model: 'gpt-5.2'\n- reasoningEffort: 'xhigh'\n- sandbox: 'read-only'\n- config: {\"web_search_request\": true}\n- name: 'research/<topic> #tags'\n\nReturn the full tool response."
 }
 ```
 
-**Important**: After calling this tool, immediately proceed to Step 2 while Codex works.
+**Save the `task_id`**. Codex is now researching in background with web search.
 
-### Step 2: Claude Researches (Parallel)
+#### Step 2: Claude Researches Immediately (No Waiting)
 
-While Codex works, use Claude's WebSearch to research the same topic:
+While Codex works in background, use WebSearch:
 
 1. Search for current best practices and recent developments
 2. Search for authoritative sources (official docs, expert blogs)
@@ -44,9 +44,49 @@ While Codex works, use Claude's WebSearch to research the same topic:
 
 Document findings with sources and confidence levels.
 
-### Step 3: Merge Findings
+#### Step 3: Retrieve Codex Result
 
-Once both complete, merge the research into a unified output.
+When Claude's research is complete, get Codex's result:
+
+```json
+// TaskOutput tool
+{ "task_id": "<saved task_id>", "block": true, "timeout": 600000 }
+```
+
+#### Step 4: Merge Findings
+
+Combine both research outputs into unified findings.
+
+---
+
+### Option B: Parallel Tool Calls (Faster for simple queries)
+
+Make BOTH calls in a **single message** for simultaneous execution:
+
+**In the same response**, call both tools in parallel:
+
+**Tool call 1** - Codex with web search:
+```json
+// mcp__codex__codex
+{
+  "prompt": "RESEARCH: $ARGUMENTS\n\nFind key findings with sources. Rate confidence.",
+  "model": "gpt-5.2",
+  "reasoningEffort": "high",
+  "sandbox": "read-only",
+  "config": { "web_search_request": true },
+  "name": "research/<topic> #tags"
+}
+```
+
+**Tool call 2** - Claude's WebSearch:
+```json
+// WebSearch
+{ "query": "$ARGUMENTS best practices 2025" }
+```
+
+Both execute simultaneously. Merge results when both return.
+
+---
 
 ## Output Contract
 
@@ -96,4 +136,4 @@ Codex session: `research/<topic>` (conversationId: ...)
 
 ## Tool Name Note
 
-If you installed as a manual MCP server (not plugin), use `mcp__codex__codex` instead of `mcp__plugin_codex-bridge_codex__codex`.
+If you installed as a manual MCP server (not plugin), use `mcp__codex__*` instead of `mcp__plugin_codex-bridge_codex__*`.

@@ -1,11 +1,17 @@
 ---
 name: research
 description: |
+  DEPRECATED: Use codex-bridge skill instead (`/codex research <query>`).
   Dual-model research: Claude and Codex both research in parallel, then merge findings.
   Use when: you need current/up-to-date information, best practices research, technology comparisons.
   Avoid when: Codex's training data is sufficient, speed matters more than thoroughness.
   Triggers: "research", "look up", "find current", "what's the latest", "best practices for"
 allowed-tools:
+  # Task tool for true parallel execution
+  - Task
+  - TaskOutput
+  # Claude's web search
+  - WebSearch
   # Plugin installation (Claude Code extension)
   - mcp__plugin_codex-bridge_codex__codex
   - mcp__plugin_codex-bridge_codex__codex-reply
@@ -25,6 +31,9 @@ allowed-tools:
 ---
 
 # Research Skill (Dual-Model)
+
+> **DEPRECATED**: This skill is superseded by the unified `codex-bridge` skill.
+> Use `/codex research <query>` instead for true parallel execution.
 
 ## Purpose
 
@@ -56,11 +65,37 @@ Ask if not provided:
 2. **Context**: Why this research matters
 3. **Scope**: Breadth vs depth preference
 
-## Workflow
+## Workflow (True Parallel Execution)
 
-1. **Dispatch Codex** with web search enabled (don't wait)
-2. **Claude researches** the same topic using WebSearch in parallel
-3. **Merge findings** when both complete
+### Option A: Background Task (Recommended)
+
+1. **Dispatch Codex in background** using Task tool:
+   ```json
+   {
+     "description": "Codex researches topic",
+     "subagent_type": "general-purpose",
+     "run_in_background": true,
+     "prompt": "Use mcp__codex__codex with prompt='RESEARCH: ...' config={\"web_search_request\": true} model='gpt-5.2' sandbox='read-only' name='research/<topic>'"
+   }
+   ```
+   Save the `task_id`.
+
+2. **Claude researches immediately** using WebSearch (no waiting)
+
+3. **Retrieve Codex result** using TaskOutput:
+   ```json
+   { "task_id": "<saved task_id>", "block": true, "timeout": 600000 }
+   ```
+
+4. **Merge findings** from both sources
+
+### Option B: Parallel Tool Calls
+
+Make BOTH calls in a single message for parallel execution:
+- Call 1: `mcp__codex__codex` with `config: { "web_search_request": true }`
+- Call 2: `WebSearch` with the same query
+
+Both execute simultaneously. Merge when both return.
 
 ## Tool Settings for Codex
 

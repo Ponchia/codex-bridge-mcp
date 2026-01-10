@@ -1,11 +1,15 @@
 ---
 name: critical-discussion
 description: |
+  DEPRECATED: Use codex-bridge skill instead (`/codex discuss <topic>`).
   Dual-model discussion: Claude and Codex both analyze, then synthesize to a shared conclusion.
   Use when: evaluating trade-offs, architecture decisions, risk analysis, strategic choices.
   Avoid when: you need code changes (use coding-delegation), simple factual questions.
   Triggers: "discuss", "analyze", "evaluate", "trade-offs", "architecture", "ADR", "second opinion".
 allowed-tools:
+  # Task tool for true parallel execution
+  - Task
+  - TaskOutput
   # Plugin installation (Claude Code extension)
   - mcp__plugin_codex-bridge_codex__codex
   - mcp__plugin_codex-bridge_codex__codex-reply
@@ -25,6 +29,9 @@ allowed-tools:
 ---
 
 # Critical Discussion (Dual-Model)
+
+> **DEPRECATED**: This skill is superseded by the unified `codex-bridge` skill.
+> Use `/codex discuss <topic>` instead for true parallel execution.
 
 ## Purpose
 
@@ -57,11 +64,27 @@ Both Claude and Codex analyze the topic independently, then synthesize into a sh
 - **Options**: Known alternatives (if any)
 - **Stakes**: Why this decision matters
 
-## Workflow
+## Workflow (True Parallel Execution)
 
-1. **Dispatch Codex** with analysis prompt (don't wait)
-2. **Claude analyzes** the same topic in parallel
-3. **Synthesize** when both complete: agreements, differences, shared conclusion
+1. **Dispatch Codex in background** using Task tool:
+   ```json
+   {
+     "description": "Codex analyzes topic",
+     "subagent_type": "general-purpose",
+     "run_in_background": true,
+     "prompt": "Use mcp__codex__codex with prompt='TOPIC: ...' model='gpt-5.2' reasoningEffort='xhigh' sandbox='read-only' name='arch/<topic>'"
+   }
+   ```
+   Save the `task_id` from the response.
+
+2. **Claude analyzes immediately** (no waiting) - form your own position
+
+3. **Retrieve Codex result** using TaskOutput:
+   ```json
+   { "task_id": "<saved task_id>", "block": true, "timeout": 300000 }
+   ```
+
+4. **Synthesize** when both complete: agreements, differences, shared conclusion
 
 ## Tool Settings for Codex
 

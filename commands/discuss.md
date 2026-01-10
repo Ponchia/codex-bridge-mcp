@@ -5,47 +5,55 @@ argument-hint: <topic to discuss>
 
 # Critical Discussion (Dual-Model)
 
-Discuss this topic with both Claude and Codex, then synthesize into a shared conclusion.
+Discuss this topic with both Claude and Codex **in true parallel**, then synthesize into a shared conclusion.
 
 ## Topic
 
 $ARGUMENTS
 
-## Workflow
+## Workflow (True Parallel Execution)
 
-### Step 1: Dispatch Codex Analysis (Background)
+### Step 1: Dispatch Codex in Background
 
-Start Codex analyzing the topic:
+Use the Task tool to run Codex without blocking:
 
 ```json
-// mcp__plugin_codex-bridge_codex__codex
+// Task tool
 {
-  "prompt": "TOPIC: $ARGUMENTS\n\nCONTEXT:\n- [Relevant background]\n- [Constraints and requirements]\n\nANALYSIS REQUIRED:\nProvide your independent analysis:\n1. Key considerations and factors\n2. Trade-offs between approaches\n3. Risks and mitigations\n4. Your recommendation with rationale\n\nBe thorough, cite your reasoning, and flag assumptions.",
-  "model": "gpt-5.2",
-  "reasoningEffort": "xhigh",
-  "sandbox": "read-only",
-  "name": "arch/<topic> #tags"
+  "description": "Codex analyzes topic",
+  "subagent_type": "general-purpose",
+  "run_in_background": true,
+  "prompt": "Use the mcp__codex__codex tool with these parameters:\n- prompt: 'TOPIC: $ARGUMENTS\n\nCONTEXT:\n- [Relevant background]\n- [Constraints and requirements]\n\nANALYSIS REQUIRED:\n1. Key considerations and factors\n2. Trade-offs between approaches\n3. Risks and mitigations\n4. Your recommendation with rationale\n\nBe thorough, cite your reasoning, and flag assumptions.'\n- model: 'gpt-5.2'\n- reasoningEffort: 'xhigh'\n- sandbox: 'read-only'\n- name: 'arch/<topic> #tags'\n\nReturn the full tool response."
 }
 ```
 
-**Important**: After calling this tool, immediately proceed to Step 2 while Codex works.
+**Save the `task_id`** from the response. Codex is now running in background.
 
-### Step 2: Claude Analyzes (Parallel)
+### Step 2: Claude Analyzes Immediately (No Waiting)
 
-While Codex works, Claude analyzes the same topic:
+While Codex works in background, Claude analyzes the same topic:
 
 1. Consider the key trade-offs and constraints
 2. Evaluate different approaches
 3. Identify risks and edge cases
 4. Form your own recommendation
 
-Document your analysis with reasoning.
+Document your analysis with reasoning thoroughly.
 
-### Step 3: Synthesize to Shared Conclusion
+### Step 3: Retrieve Codex Result
 
-Once both complete, compare analyses and synthesize:
+When Claude's analysis is complete, get Codex's result:
+
+```json
+// TaskOutput tool
+{ "task_id": "<saved task_id>", "block": true, "timeout": 300000 }
+```
+
+### Step 4: Synthesize to Shared Conclusion
+
+Compare both analyses and synthesize:
 - Identify where both agree (high confidence)
-- Identify where they differ (needs discussion)
+- Identify where they differ (needs resolution)
 - Resolve differences through reasoning
 - Produce a shared recommendation
 

@@ -1,6 +1,7 @@
 ---
 name: coding-delegation
 description: |
+  DEPRECATED: Use codex-bridge skill instead (`/codex delegate <task>`).
   Delegate coding tasks to GPT 5.2 Codex for autonomous implementation.
   Use when: implementing features, writing tests, refactoring, fixing bugs, generating boilerplate.
   Avoid when: requirements are unclear (use critical-discussion first).
@@ -25,6 +26,9 @@ allowed-tools:
 ---
 
 # Coding Delegation (GPT 5.2 Codex)
+
+> **DEPRECATED**: This skill is superseded by the unified `codex-bridge` skill.
+> Use `/codex delegate <task>` instead for the same functionality.
 
 ## Purpose
 
